@@ -1,0 +1,5 @@
+.build/
+*.swp
+/local/
+/Accounting-Kitty-*.tar.gz
+/Accounting-Kitty-*/
