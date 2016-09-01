@@ -4,7 +4,7 @@
 
 =head1 NAME
 
-Accounting::Kitty - [ a brief description of the distribution ]
+Accounting::Kitty - Simple accounting system for a shared fund
 
 =head1 VERSION
 
@@ -17,7 +17,166 @@ This document describes Accounting::Kitty version {{[ version ]}}.
 
 =head1 DESCRIPTION
 
-This module allows you to...
+This module allows you to manage a simple shared fund of money (or
+whatever other resource you can count). It main purpose is to track how
+much of a total amount belongs to each participant in the fund, allowing
+you to perform operations like adding or subtracting from the fund.
+
+The basic working is that of a double entry system: every transaction
+always involves two parties. It's possible to handle multiparty
+transactions too, but they always resolve to be man two-party
+transactions actually. In its current state, it allows to easily track
+expenses that should be split across multiple participants, possibly
+according to a given preset scheme (e.g. equal split, or weighted, or
+based on a table that varies in time).
+
+=head2 Transfer Splitting
+
+A transfer can be split into component parts, e.g. a common expense
+might be split across multiple participant accounts.
+
+A split can be either a I<contribution> or a I<distribution>, depending
+on how resources are flowing. In a I<contribution>, you're splitting the
+original transfer across multiple sources, which will see their
+resources decremented (to "participate" in the transfer); in a
+I<distribution>, instead, the original transfer is split across multiple
+destinations, increasing their resources.
+
+To generate transfers for a split, use L</transfer_contribution_split>
+and L</transfer_distribution_split>. They have the same interface,
+accepting a hash reference C<\%def> with the following keys:
+
+=over
+
+=item C<date>
+
+the split transaction(s) date (and time), parsed via
+L<DateTime::Format::ISO8601/parse_datetime>. Defaults to
+the split transfer date;
+
+=item C<description>
+
+a string with the description of the split transaction(s), optional
+(defaults to the split transfer description);
+
+=item C<exact>
+
+flag if the C<quota_type> has to be assumed to hold I<exact> values,
+i.e. if they have not to be interpreted as I<weights>. Defaults to a
+false value, which means that quota elements are usually interpreted as
+weights;
+
+=item C<quota_type>
+
+an indication of how to split the input transfer into sub-transfers. See
+L</Quotas> for details;
+
+=item C<title>
+
+a string with the title of the split transaction(s), optional (defaults
+to the split transfer title);
+
+=item C<transfer>
+
+the transaction to be split.
+
+=back
+
+=head2 Quotas
+
+In L</transfer_contribution_split> and L</transfer_distribution_split>,
+there are a few ways in which you can divide a transfer into I<quotas>
+(via parameter L</quota_type>), depending on the flexibility level that
+you need.
+
+The most flexible way is to pass an array reference containing hashes
+with the following fields:
+
+=over
+
+=item C<account>
+
+the account participating in the split with the specific quota;
+
+=item C<amount>
+
+the exact amount for the quota;
+
+=item C<weight>
+
+=back
+
+If the first item contains C<amount>, all of them MUST have the same key
+too and an exact split will be performed, using those amounts.
+Otherwise, all items MUST contain C<weight>, and these weights will be
+used to split the provided amount into splits according to their values.
+
+In addition to this, which requires you to do all the work of either
+figuring out the right amounts, or at least determine the weights, there
+are also two additional possibilities: using pre-defined fixed quota
+weights and using I<finance> splitting weights. These are described
+in the following sub-sections.
+
+=head3 Fixed Quota Groups
+
+In fixed quota groups, you refer to a configuration of fixed quotas
+inside the database. For example, consider the following case:
+
+   Table: account
+   id          name        _type       total     
+   ----------  ----------  ----------  ----------
+   1           External    service     0         
+   2           Common      service     0         
+   3           Foo         owned       0
+   4           Bar         owned       0
+
+   Table: quota
+   id          name         account_id  value     
+   ----------  -----------  ----------  ----------
+   1           fifty-fifty  3           1
+   2           fifty-fifty  4           1
+   3           100% Foo     3           1
+   4           100% Bar     4           1
+
+There are three quota groups, identified by the name: C<fifty-fifty>,
+C<100% Foo>, C<100% Bar>. All weights are set to 1, which means that:
+
+=over
+
+=item *
+
+for C<fifty-fifty>, accounts C<3> and C<4> will split equally (as they
+have the same weight);
+
+=item *
+
+for C<100% Foo>, account C<3> will take it all (there's no other account
+to share the split);
+
+=item *
+
+for C<100% Bar>, account C<4> will take it all (there's no other account
+to share the split).
+
+=back
+
+If you are more comfortable you can use percentages, of course:
+
+
+   Table: quota
+   id          name         account_id  value     
+   ----------  -----------  ----------  ----------
+   1           fifty-fifty  3           50
+   2           fifty-fifty  4           50
+   3           100% Foo     3           100
+   4           100% Bar     4           100
+
+The outcome would be the same (in particular, in the C<fifty-fifty> case
+both accounts still have the same weight).
+
+=head3 Finance Quota Groups
+
+
 
 =head1 FUNCTIONS
 
@@ -27,8 +186,199 @@ This module allows you to...
 
 =head1 METHODS
 
-=head2 B<< whatever >>
+C<Accounting::Kitty> inherits from L<DBIx::Class::Schema>, so it gets
+all its methods (most notably the constructor and C<resultset>).
 
+=head2 B<< accounts >>
+
+   my @accounts = $ak->accounts();
+   my $accounts = $ak->accounts();
+   my @accounts = $ak->accounts(@query);
+   my $accounts = $ak->accounts(@query);
+
+retrieve a list of L<Accounting::Kitty::Result::Account> objects.
+
+You can call it either in list context (getting the list of account
+objects back) or in scalar context (getting an anonymous array back).
+
+You can optionally pass a C<@query> compatible with
+L<DBIx::Class::Schema/resultset>; otherwise, all accounts will be
+returned.
+
+=head2 B<< fetch >>
+
+   my $item = $ak->fetch($what, $query);
+   my @items = $ak->fetch($what1, $query1, ...);
+
+fetch multiple items in a I<DWIM> way.
+
+In scalar context, it only gets one single item based on the first two
+parameters. In list context, one item is returned for every pair of
+input parameters.
+
+Each item is fetched based on two parameters: an item type C<$what> and
+a query hint.
+
+The C<$what> can be C<Account>, C<Transfer>, C<Quota> and
+C<QuotaFinance>, corresponding to the different result types managed by
+this distribution (if you extend it adding more result classes, you can
+fetch them too of course).
+
+The C<$query> can be:
+
+=over
+
+=item *
+
+an object, which is passed along unmodified (without checking that it is
+of the right class). This allows you to just pass what you have through
+C<fetch> and avoid checking;
+
+=item *
+
+a plain scalar, regarded as the item's identifier in the relevant
+database table;
+
+=item *
+
+a hash reference containing a query that is compatible with
+L<DBIx::Class::Schema/resultset>.
+
+=back
+
+In the following example, we assume that an account exists with id C<1>
+and name "Foo". All calls to fetch return the same account:
+
+   my $by_id   = $ak->fetch(Account => 1);
+   my $by_obj  = $ak->fetch(Account => $by_id);
+   my $by_name = $ak->fetch(Account => {name => 'Foo'});
+
+=head2 B<< quota_groups >>
+
+   my @quota_types      = $ak->quota_groups();
+   my $quota_types_aref = $ak->quota_groups();
+
+get all pre-defined quota groups, i.e. pre-defined splitting into
+(weighted) quotas.
+
+Depending on calling context, you will either get a list of quotas back,
+or a reference to an array containing the quotas.
+
+There are two types of quota groups: I<plain> and I<finance> (see
+L</Quotas> for details).
+
+Each quota group returned is a hash reference with at least the
+following keys:
+
+=over
+
+=item C<id>
+
+identifier of the quota group, useful for retrieving it later. For
+I<plain> quota groups, it is the same as the C<name> below; otherwise,
+it represents the group of sub-quotas associated to the specific
+C<name>;
+
+=item C<name>
+
+name of the quota group, used for retrieving it. For I<plain> quota
+groups, this is the same as C<id>;
+
+=item C<type>
+
+this is a string that can be either C<plain> or C<finance>.
+
+=back
+
+For I<finance> quota groups, the following additional keys are
+available:
+
+=over
+
+=item C<maxs>
+
+the maximum value for C<sequence_number>;
+
+=item C<mins>
+
+the minimum value for C<sequence_number>;
+
+=item C<sequence_number>
+
+the next quota sub-group identifier.
+
+=back
+
+
+=head2 B<< transfer_contribution_split >>
+
+   $ak->transfer_contribution_split(\%def);
+
+See L</Transfer Splitting>.
+
+=head2 B<< transfer_distribution_split >>
+
+   $ak->transfer_distribution_split(\%def);
+
+See L</Transfer Splitting>.
+
+=head2 B<< transfer_delete >>
+
+   $ak->transfer_delete($transfer);
+
+wrapper around L<Accounting::Kitty::Result::Transfer/mark_delete>, where
+C<$trasfer> is passed through L</fetch> to get to a real transfer
+object. Does not return anything.
+
+=head2 B<< transfer_record >>
+
+   my $transfer = $ak->transfer_record(\%def);
+
+record a new transfer and get it back, I<DWIM>my.
+
+The input hash reference C<\%def> has the following keys:
+
+=over
+
+=item C<amount>
+
+the amount of the transaction;
+
+=item C<date>
+
+the transaction date (and time), parsed via
+L<DateTime::Format::ISO8601/parse_datetime>. Defaults to
+L<DateTime/now>;
+
+=item C<description>
+
+a string with the description of the transaction, optional (defaults to
+the empty string);
+
+=item C<dst>
+
+the destination account, pass a C<$query> compatible with L</fetch>;
+
+=item C<parent>
+
+the parent of the transaction, in case this is a split of an existing
+transaction. It can be either the parent's identifier, or another
+transaction object;
+
+=item C<src>
+
+the source account, pass a C<$query> compatible with L</fetch>;
+
+=item C<title>
+
+a string with the title of the transaction, optional (defaults to the
+empty string).
+
+=back
+
+If the C<amount> is negative, C<dst> and C<src> are swapped and the
+transfer is recorded with a positive amount (i.e. as the opposite of the
+provided C<amount>).
 
 =head1 BUGS AND LIMITATIONS
 
