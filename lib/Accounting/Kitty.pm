@@ -18,7 +18,6 @@ use Accounting::Kitty::Util qw< round >;
 use base 'DBIx::Class::Schema';
 __PACKAGE__->load_namespaces;
 
-
 sub accounts {
    my $self = shift;
    my @retval;
@@ -36,11 +35,11 @@ sub _divide_in_quotas {
    my ($self, $quota_type, $amount, $cb, $exact) = @_;
 
    if (ref($quota_type)) {
-      return unless @$quota_types;
+      return unless @$quota_type;
       return $self->_divide_in_quotas_exact($quota_type, $amount, $cb)
         if defined($quota_type->[0]{amount});
       return $self->_divide_in_quotas_weighted($quota_type, $amount, $cb);
-   }
+   } ## end if (ref($quota_type))
 
    my ($type, $identifier) = split /:/, $quota_type, 2;
    ($type, $identifier) = (plain => $type) unless defined $identifier;
@@ -48,7 +47,7 @@ sub _divide_in_quotas {
    return $self->_divide_in_quotas_finance($identifier, $amount, $cb)
      if $type eq 'finance';
    return $self->_divide_in_quotas_plain($identifier, $amount, $cb);
-} ## end sub divide_in_quotas
+} ## end sub _divide_in_quotas
 
 sub _divide_in_quotas_finance {
    my ($self, $quota_type, $amount, $cb) = @_;
@@ -120,7 +119,7 @@ sub _divide_in_quotas_finance {
       }
    );
    return values %quotas;
-} ## end sub divide_in_quotas_finance
+} ## end sub _divide_in_quotas_finance
 
 sub _divide_in_quotas_plain {
    my ($self, $quota_type, $amount, $cb, $exact) = @_;
@@ -131,7 +130,7 @@ sub _divide_in_quotas_plain {
      $rs->search({name => $quota_type}, {order_by => 'id'});
 
    return $self->_divide_in_quotas_weighted(\@quotas, $amount, $cb);
-} ## end sub divide_in_quotas_plain
+} ## end sub _divide_in_quotas_plain
 
 sub _divide_in_quotas_exact {
    my ($self, $quotas, $amount, $cb) = @_;
@@ -148,7 +147,7 @@ sub _divide_in_quotas_exact {
 
    $cb->(@$quotas) if $cb;
    return @$quotas;
-}
+} ## end sub _divide_in_quotas_exact
 
 sub _divide_in_quotas_weighted {
    my ($self, $quota_type, $amount, $cb) = @_;
@@ -156,7 +155,9 @@ sub _divide_in_quotas_weighted {
    # shallow copy suffices, we only operate on the first level. We
    # do some shuffling so that the accumulated rounding is spread
    # possibly in an even way over multiple splits
-   my @quotas = shuffle map { { %$_ } } @$quota_type;    # be fair?
+   my @quotas = shuffle map {
+      { %$_ }
+   } @$quota_type;    # be fair?
 
    my $total = 0;
    for my $q (@quotas) {
@@ -170,11 +171,11 @@ sub _divide_in_quotas_weighted {
       $q->{amount} = round($amount * $q->{weight} / $total);
       $accumulated += $q->{amount};
    }
-   $quotas[-1]{amount} += $amount - $accumulated;   # adjust roundings
+   $quotas[-1]{amount} += $amount - $accumulated;    # adjust roundings
 
    $cb->(@quotas) if $cb;
    return @quotas;
-}
+} ## end sub _divide_in_quotas_weighted
 
 sub fetch {
    my $self = shift;
@@ -189,7 +190,7 @@ sub fetch {
          else {
             push @retval, $self->resultset($what)->search($query);
          }
-      }
+      } ## end if (defined $query)
       else {
          push @retval, undef;
       }
@@ -200,12 +201,89 @@ sub fetch {
    return @retval;
 } ## end sub fetch
 
-sub quota_types {
+sub initialize_tables {
+   my $self  = shift;
+   my $args  = (@_ && ref($_[0])) ? $_[0] : {@_};
+   my $check = exists($args->{check}) ? $args->{check} : 1;
+
+   my @definition_for = (
+      owner => <<'END',
+CREATE TABLE owner (
+   id    INTEGER PRIMARY KEY,
+   key   TEXT CONSTRAINT unique_key UNIQUE,
+   data  TEXT,
+   total INTEGER
+);
+END
+      project => <<'END',
+CREATE TABLE project (
+   id   INTEGER PRIMARY KEY,
+   name TEXT,
+   data TEXT
+);
+END
+      account => <<'END',
+CREATE TABLE account (
+   id         INTEGER PRIMARY KEY,
+   owner_id   INTEGER REFERENCES owner(id),
+   project_id INTEGER REFERENCES project(id),
+   name       TEXT,
+   data       TEXT,
+   total      INTEGER
+)
+END
+      quota => <<'END',
+CREATE TABLE quota (
+   id         INTEGER PRIMARY KEY,
+   name       TEXT,
+   account_id INTEGER REFERENCES account(id),
+   value      INTEGER
+)
+END
+      quota_finance => <<'END',
+CREATE TABLE quota_finance (
+   id INTEGER      PRIMARY KEY,
+   group_id        INTEGER,
+   name            TEXT,
+   is_visible      INTEGER,
+   account_id      INTEGER REFERENCES account(id),
+   sequence_number INTEGER,
+   value           INTEGER,
+   is_active       INTEGER
+)
+END
+      transfer => <<'END',
+CREATE TABLE transfer (
+   id          INTEGER PRIMARY KEY,
+   src_id      INTEGER REFERENCES account(id),
+   dst_id      INTEGER REFERENCES account(id),
+   amount      INTEGER,
+   date_       TEXT,
+   title       TEXT,
+   description TEXT,
+   parent_id   INTEGER REFERENCES transfer(id),
+   is_deleted  INTEGER
+)
+END
+   );
+
+   my $dbh = $self->storage()->dbh();
+   while (@definition_for) {
+      my ($name, $definition) = splice @definition_for, 0, 2;
+      my $qname = $dbh->quote_identifier($name);
+      eval { $check && $dbh->do('SELECT COUNT(*) FROM ' . $qname) } or do {
+         $dbh->do($definition);
+      };
+   } ## end while (@definition_for)
+   return;
+} ## end sub initialize_tables
+
+sub quota_groups {
    my $self = shift;
    my @qts = ($self->quota_types_plain(), $self->quota_types_finance());
    return @qts if wantarray();
    return \@qts;
-}
+} ## end sub quota_groups
 
 sub _quota_types_finance {
    my $self = shift;
@@ -246,7 +324,7 @@ sub _quota_types_finance {
          type            => 'finance',
       }
    } @limits;
-} ## end sub quota_types_finance
+} ## end sub _quota_types_finance
 
 sub _quota_types_plain {
    my $self = shift;
@@ -256,18 +334,16 @@ sub _quota_types_plain {
      ->get_column('name')->all();
    return @plains if wantarray();
    return \@plains;
-} ## end sub quota_types_plain
+} ## end sub _quota_types_plain
 
 sub transfer_contribution_split {
-   my ($self, $params) = @_;
-   return $self->_transfer_split(
-      {
-         %$params,
-         src => undef,
-         dst => $params->{transfer}->src(),
-      }
-   );
-} ## end sub record_contribution
+   my $self   = shift;
+   my $params = {((@_ && ref($_[0])) ? %{$_[0]} : @_), src => undef,};
+   my $t      = $params->{transfer} =
+     $self->fetch(Transfer => $params->{transfer});
+   $params->{dst} = $t->src();
+   return $self->_transfer_split($params);
+} ## end sub transfer_contribution_split
 
 sub transfer_distribution_split {
    my ($self, $params) = @_;
@@ -278,45 +354,50 @@ sub transfer_distribution_split {
          dst => undef,
       }
    );
-} ## end sub record_distribution
+} ## end sub transfer_distribution_split
 
 sub transfer_delete {
    my ($self, $transfer) = @_;
    $self->fetch(Transfer => $transfer)->mark_deleted();
-} ## end sub delete_transfer
+}
 
 sub transfer_record {
-   my ($self, $t)   = @_;
-   my ($src,  $dst) = $self->fetch(
+   my $self = shift;
+   my $t = {(@_ && ref($_[0])) ? %{$_[0]} : @_};
+   my ($src, $dst) = $self->fetch(
       Account => $t->{src},
-      Account => $t->{dst}
+      Account => $t->{dst},
    );
    my $amount = $t->{amount};
-   ($amount, $src, $dst) = (-$amount, $dst, $src)
-      if $amount < 0;
+   my $invert = 0;
+   ($amount, $src, $dst, $invert) = (-$amount, $dst, $src, 1)
+     if $amount < 0;
    my $date = $t->{date} // DateTime->now();
    $date = DateTime::Format::ISO8601->parse_datetime($date)
      unless blessed($date) && $date->isa('DateTime');
+   my $parent_id = $t->{parent};
+   $parent_id = $parent_id->id() if ref $parent_id;
    my $transfer = $self->resultset('Transfer')->create(
       {
          src         => $src,
          dst         => $dst,
-         tdate       => $date,
+         date_       => $date,
          title       => $t->{title} // '',
          description => $t->{description} // '',
          amount      => $amount,
-         parent      => $t->{parent},
+         parent_id   => $parent_id,
       }
    );
 
    if (!exists $t->{parent}) {
-      $transfer->parent($transfer->id());
+      $transfer->parent_id($transfer->id());
       $transfer->update();
    }
 
    $src->subtract_amount($amount);
    $dst->add_amount($amount);
 
+   $transfer->invert($invert);
    return $transfer;
 } ## end sub transfer_record
 
@@ -338,7 +419,7 @@ sub _transfer_split {
      or croak "cannot determine transfer";
    my $amount = $reference->amount();
 
-   my $quota_type = $params->{quota_type};
+   my $quota_type = $params->{quotas};
    croak "provide hints for dividing in quotas"
      unless defined($quota_type);
 
@@ -351,8 +432,8 @@ sub _transfer_split {
                {
                   $reference->as_hash(),    # defaults from parent...
                   %$params,                 # what was passed in...
-                  src => $src // $q->{account},
-                  dst => $dst // $q->{account},
+                  src => $src // $q->{account_id},
+                  dst => $dst // $q->{account_id},
                   amount => $q->{amount},
                   parent => $reference,
                }
@@ -362,7 +443,7 @@ sub _transfer_split {
    );
 
    return;
-} ## end sub record_attribution
+} ## end sub _transfer_split
 
 1;
 __END__

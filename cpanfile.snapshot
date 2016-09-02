@@ -473,6 +473,14 @@ DISTRIBUTIONS
       DateTime 0.18
       DateTime::Format::Builder 0.77
       Module::Build 0.38
+  DateTime-Format-SQLite-0.11
+    pathname: C/CF/CFAERBER/DateTime-Format-SQLite-0.11.tar.gz
+    provides:
+      DateTime::Format::SQLite 0.11
+    requirements:
+      DateTime 0.1
+      DateTime::Format::Builder 0.6
+      ExtUtils::MakeMaker 0
   DateTime-Format-Strptime-1.68
     pathname: D/DR/DROLSKY/DateTime-Format-Strptime-1.68.tar.gz
     provides:
