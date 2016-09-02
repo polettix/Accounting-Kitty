@@ -13,30 +13,29 @@ subtest 'distribution' => sub {
 
    my @transfers;
    lives_ok {
-      @transfers = $ak->multi_transfers_record(
-         {
+      @transfers = $ak->transfer_and_distribution_split(
+         {    # this is the transfer
             src    => 1,
             dst    => 2,
             title  => 'prova (main)',
             amount => 10000,
          },
-         {
-            src    => 2,
-            dst    => 3,
-            title  => 'prova (first)',
-            amount => 7000,
-            parent => '[0]',
-         },
-         {
-            src    => 2,
-            dst    => 4,
-            title  => 'prova (second)',
-            amount => 3000,
-            parent => '[0]',
+         {    # this is the contribution split
+            quotas => [
+               {
+                  account => 3,
+                  amount  => 7000,
+               },
+               {
+                  account => 4,
+                  amount  => 3000,
+               }
+            ],
+            title => 'prova (distribution)',
          },
       );
    } ## end lives_ok
-   'multi_transfers_record lives';
+   'transfer_and_contribution_split lives';
 
    is scalar(@transfers), 3, 'three transfers created';
 

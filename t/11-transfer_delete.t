@@ -42,7 +42,7 @@ subtest 'remove child transfer' => sub {
    @transfers = $ak->fetch(
       Transfer => {
          parent_id  => 3,
-         is_deleted => undef, # look for stuff that's still alive!
+         is_deleted => undef,    # look for stuff that's still alive!
       }
    );
    is scalar(@transfers), 1, 'one transfer left in group 3 (the leader)';
@@ -63,7 +63,7 @@ subtest 'remove parent transfer' => sub {
    @transfers = $ak->fetch(
       Transfer => {
          parent_id  => 3,
-         is_deleted => undef, # look for stuff that's still alive!
+         is_deleted => undef,    # look for stuff that's still alive!
       }
    );
    is scalar(@transfers), 0, 'no transfer left in group 3';

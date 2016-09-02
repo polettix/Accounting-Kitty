@@ -40,12 +40,11 @@ subtest owners => sub {
    isa_ok $_, 'Accounting::Kitty::Result::Owner' for @owners;
 
    my %names = map { $_->key() => 1 } @owners;
-   is_deeply \%names, {FooOwner => 1, BarOwner => 1},
-     'owners names';
+   is_deeply \%names, {FooOwner => 1, BarOwner => 1}, 'owners names';
 };
 
 my $hash = {
-   id => 1,
+   id   => 1,
    name => 'BazProject1',
    data => 'whateverables',
 };

@@ -423,7 +423,24 @@ sub transfer_and_contribution_split {
 } ## end sub transfer_record_and_contribution_split
 
 sub transfer_and_distribution_split {
-
+   my $self = shift;
+   my ($transfer_input, $split) = @_;
+   my @retval;
+   $self->txn_do(
+      sub {
+         my $transfer = $self->transfer_record($transfer_input);
+         @retval = (
+            $transfer,
+            $self->transfer_distribution_split(
+               %$split,    # all split inputs are fine...
+               transfer => $transfer    # ... except this
+            )
+         );
+         return;
+      }
+   );
+   return @retval if wantarray();
+   return \@retval;
 }
 
 sub _transfer_split {

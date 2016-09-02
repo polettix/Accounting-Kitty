@@ -32,7 +32,7 @@ subtest 'basic transfer' => sub {
    is $transfer->dst()->id(), 4, 'dst id';
    is $transfer->amount(), 1000, 'amount';
    ok !$transfer->is_inverted(), 'output transfer is not inverted';
-   is $transfer->title(), 'the title', 'title';
+   is $transfer->title(),       'the title',       'title';
    is $transfer->description(), 'the description', 'description';
    is $transfer->parent_id(), $transfer->id(), 'auto-parenting';
 };
@@ -69,10 +69,10 @@ subtest 'transfer with src object and dst id' => sub {
    my $foo = $ak->fetch(Account => {name => 'Foo'});
    lives_ok {
       $transfer = $ak->transfer_record(
-         src         => $foo,
-         dst         => 4,
-         amount      => 1000,
-         title       => 'the title 3',
+         src    => $foo,
+         dst    => 4,
+         amount => 1000,
+         title  => 'the title 3',
       );
    } ## end lives_ok
    'mixed object and id, no description';
@@ -82,8 +82,8 @@ subtest 'transfer with src object and dst id' => sub {
    is $transfer->dst()->id(), 4, 'dst id';
    is $transfer->amount(), 1000, 'amount';
    ok !$transfer->is_inverted(), 'output transfer is not inverted';
-   is $transfer->title(), 'the title 3', 'title';
-   is $transfer->description(), '', 'description (empty)';
+   is $transfer->title(),       'the title 3', 'title';
+   is $transfer->description(), '',            'description (empty)';
    is $transfer->parent_id(), $transfer->id(), 'auto-parenting';
 };
 
@@ -93,9 +93,9 @@ subtest 'modifications on affected accounts and owners' => sub {
       Account => {name => 'Bar'},
    );
    is $foo->total(), -7000, 'Foo account total';
-   is $bar->total(), 7000, 'Bar account total';
+   is $bar->total(), 7000,  'Bar account total';
    is $foo->owner()->total(), -7000, 'FooOwner owner total';
-   is $bar->owner()->total(), 7000, 'BarOwner owner total';
+   is $bar->owner()->total(), 7000,  'BarOwner owner total';
 };
 
 done_testing();

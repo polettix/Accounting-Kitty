@@ -34,19 +34,12 @@ my @accounts;
 lives_ok { @accounts = $ak->accounts() } 'get list of accounts';
 is scalar(@accounts), 8, 'number of accounts';
 
-
-
-
-
-
-
-
-
 # FIXME move into separate file
 my $foo;
 lives_ok {
    ($foo) = grep { $_->name() eq 'Foo' } @accounts;
-} 'method name() works on retrieved accounts';
+}
+'method name() works on retrieved accounts';
 is $foo->id(), 3, 'id of Foo account';
 
 my $bar;
