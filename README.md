@@ -150,9 +150,7 @@ both accounts still have the same weight).
 
 ### Finance Quota Groups
 
-# FUNCTIONS
-
-## **whatever**
+FIXME
 
 # METHODS
 
@@ -174,6 +172,28 @@ objects back) or in scalar context (getting an anonymous array back).
 You can optionally pass a `@query` compatible with
 ["resultset" in DBIx::Class::Schema](https://metacpan.org/pod/DBIx::Class::Schema#resultset); otherwise, all accounts will be
 returned.
+
+## **contribution\_split**
+
+    my @transfers = $ak->contribution_split(\%def);
+    my $transfers = $ak->contribution_split(\%def);
+
+split a transfer into contribution parts. Returns the list of generated
+transfers or a reference to an array with the list, in scalar context.
+
+See ["Transfer Splitting"](#transfer-splitting) for details on the parameters in the input
+hash.
+
+## **distribution\_split**
+
+    my @transfers = $ak->distribution_split(\%def);
+    my $transfers = $ak->distribution_split(\%def);
+
+split a transfer into distribution parts. Returns the list of generated
+transfers or a reference to an array with the list, in scalar context.
+
+See ["Transfer Splitting"](#transfer-splitting) for details on the parameters in the input
+hash.
 
 ## **fetch**
 
@@ -210,6 +230,55 @@ and name "Foo". All calls to fetch return the same account:
     my $by_id   = $ak->fetch(Account => 1);
     my $by_obj  = $ak->fetch(Account => $by_id);
     my $by_name = $ak->fetch(Account => {name => 'Foo'});
+
+## **initialize\_tables**
+
+    $ak->initialize_tables();
+
+setup initial tables in the database. The schema provided is good for
+SQLite, in other DB engines your mileage may vary. Returns nothing.
+
+## **multi\_transfers\_record**
+
+    my @transfers = $ak->multi_transfer_record(@transfers);
+
+record multiple, possibly related, transfers in a single transaction.
+Returns the newly created transfers.
+
+Each item in `@transfers` is a hash reference compatible suitable for
+["transfer\_record"](#transfer_record). The only exception is that parameter `parent` can
+be set to reference elements in `@transfers` that occur _before_ the
+specific transfer to be recorded, indicating the parent transfer index
+as a string between brackets.
+
+In the following example, we ask the creation of three transfers, the
+first one being the parent of the following two. As you can see, the
+`parent` key in the child transfers is a string with a `0` in
+brackets; the `0` indicates the index of the first transfer in the
+provided list (i.e. the `prova (main)` transfer at the beginning).
+
+    @transfers = $ak->multi_transfers_record(
+       {
+          src    => 1,
+          dst    => 2,
+          title  => 'prova (main)',
+          amount => 10000,
+       },
+       {
+          src    => 2,
+          dst    => 3,
+          title  => 'prova (first)',
+          amount => 7000,
+          parent => '[0]',
+       },
+       {
+          src    => 2,
+          dst    => 4,
+          title  => 'prova (second)',
+          amount => 3000,
+          parent => '[0]',
+       },
+    );
 
 ## **quota\_groups**
 
@@ -259,17 +328,37 @@ available:
 
     the next quota sub-group identifier.
 
-## **transfer\_contribution\_split**
+## **transfer\_and\_contribution\_split**
 
-    $ak->transfer_contribution_split(\%def);
+    my @transfers = $ak->transfer_and_contribution_split(
+       $transfer, $split);
+    my $transfers = $ak->transfer_and_contribution_split(
+       $transfer, $split);
 
-See ["Transfer Splitting"](#transfer-splitting).
+perform a transfer and its split into contributions in one single
+transaction. `$transfer` is a hash reference compatible with
+["transfer\_record"](#transfer_record); `$split` is a split definition compatible with
+["contribution\_split"](#contribution_split) (you can of course omit the transfer in this
+case, as it will be overridden by the one created from `$transfer`).
 
-## **transfer\_distribution\_split**
+Returns the list of transfers created, or a reference to an array with
+the list in scalar context.
 
-    $ak->transfer_distribution_split(\%def);
+## **transfer\_and\_distribution\_split**
 
-See ["Transfer Splitting"](#transfer-splitting).
+    my @transfers = $ak->transfer_and_distribution_split(
+       $transfer, $split);
+    my $transfers = $ak->transfer_and_distribution_split(
+       $transfer, $split);
+
+perform a transfer and its split into distributions in one single
+transaction. `$transfer` is a hash reference compatible with
+["transfer\_record"](#transfer_record); `$split` is a split definition compatible with
+["distribution\_split"](#distribution_split) (you can of course omit the transfer in this
+case, as it will be overridden by the one created from `$transfer`).
+
+Returns the list of transfers created, or a reference to an array with
+the list in scalar context.
 
 ## **transfer\_delete**
 

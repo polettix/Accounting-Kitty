@@ -1,0 +1,69 @@
+=pod
+
+=encoding utf8
+
+=head1 NAME
+
+Accounting::Kitty::Util - Utility functions for Accounting::Kitty
+
+=head1 SYNOPSIS
+
+   use Accounting::Kitty::Util qw< int2dec round >;
+
+   my $dec = int2dec(10000, 2); # returns 100.00
+
+   my $defect = round(123.40); # returns 123
+   my $excess = round(123.60); # returns 124
+
+=head1 DESCRIPTION
+
+This module contains utility functions that might come handy when using
+L<Accounting::Kitty>. In particular, they allow you to cope easily with
+the constraint of working with integer values only.
+
+=head1 FUNCTIONS
+
+=head2 B<< int2dec >>
+
+   my $dec = int2dec($int, $decimals);
+
+Get a decimal representation of the input C<$int> considering
+C<$decimals> positions. For example, the following:
+
+   int2dec(12345, 3)
+
+returns C<12.345>, i.e. the original C<12345> transformed considering
+three decimal digits.
+
+The output number is returned as a string actually, so it should be safe
+against possible obscure rounding tricks. It will remain as such until
+you use it as a number, though.
+
+=head2 B<< round >>
+
+   my $int = round($float);
+
+round the input C<$float> to the closer integer. Number whose decimal
+part is less than C<0.5> are rounded towards the floor, otherwise they
+are rounded to the ceiling.
+
+=head1 SEE ALSO
+
+L<Accounting::Kitty>.
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut

@@ -31,6 +31,26 @@ sub accounts {
    return \@retval;
 } ## end sub accounts
 
+sub contribution_split {
+   my $self   = shift;
+   my $params = {((@_ && ref($_[0])) ? %{$_[0]} : @_), src => undef,};
+   my $t      = $params->{transfer} =
+     $self->fetch(Transfer => $params->{transfer});
+   $params->{src} = undef;
+   $params->{dst} = $t->src();
+   return $self->_transfer_split($params);
+} ## end sub transfer_contribution_split
+
+sub distribution_split {
+   my $self   = shift;
+   my $params = {((@_ && ref($_[0])) ? %{$_[0]} : @_), src => undef,};
+   my $t      = $params->{transfer} =
+     $self->fetch(Transfer => $params->{transfer});
+   $params->{src} = $t->dst();
+   $params->{dst} = undef;
+   return $self->_transfer_split($params);
+} ## end sub transfer_distribution_split
+
 sub _divide_in_quotas {
    my ($self, $quota_type, $amount, $cb, $exact) = @_;
 
@@ -278,6 +298,29 @@ END
    return;
 } ## end sub initialize_tables
 
+sub multi_transfers_record {
+   my $self            = shift;
+   my @input_transfers = @_;
+   my @output_transfers;
+   $self->txn_do(
+      sub {
+         for my $idx (0 .. $#input_transfers) {
+            my %input = %{$input_transfers[$idx]};
+            if (defined $input{parent}) {
+               if (my ($i) = $input{parent} =~ m<\A \[ (\d+) \] \z>mxs) {
+                  croak "transfer $idx can only reference previous ones"
+                    if $i >= $idx;
+                  $input{parent} = $output_transfers[$i];
+               }
+            } ## end if (defined $input{parent...})
+            push @output_transfers, $self->transfer_record(\%input);
+         } ## end for my $idx (0 .. $#input_transfers)
+      }
+   );
+   return @output_transfers if wantarray();
+   return \@output_transfers;
+} ## end sub multi_transfers_record
+
 sub quota_groups {
    my $self = shift;
    my @qts = ($self->quota_types_plain(), $self->quota_types_finance());
@@ -336,25 +379,47 @@ sub _quota_types_plain {
    return \@plains;
 } ## end sub _quota_types_plain
 
-sub transfer_contribution_split {
-   my $self   = shift;
-   my $params = {((@_ && ref($_[0])) ? %{$_[0]} : @_), src => undef,};
-   my $t      = $params->{transfer} =
-     $self->fetch(Transfer => $params->{transfer});
-   $params->{src} = undef;
-   $params->{dst} = $t->src();
-   return $self->_transfer_split($params);
-} ## end sub transfer_contribution_split
+sub transfer_and_contribution_split {
+   my $self = shift;
+   my ($transfer_input, $split) = @_;
+   my @retval;
+   $self->txn_do(
+      sub {
+         my $transfer = $self->transfer_record($transfer_input);
+         @retval = (
+            $transfer,
+            $self->contribution_split(
+               %$split,    # all split inputs are fine...
+               transfer => $transfer    # ... except this
+            )
+         );
+         return;
+      }
+   );
+   return @retval if wantarray();
+   return \@retval;
+} ## end sub transfer_record_and_contribution_split
 
-sub transfer_distribution_split {
-   my $self   = shift;
-   my $params = {((@_ && ref($_[0])) ? %{$_[0]} : @_), src => undef,};
-   my $t      = $params->{transfer} =
-     $self->fetch(Transfer => $params->{transfer});
-   $params->{src} = $t->dst();
-   $params->{dst} = undef;
-   return $self->_transfer_split($params);
-} ## end sub transfer_distribution_split
+sub transfer_and_distribution_split {
+   my $self = shift;
+   my ($transfer_input, $split) = @_;
+   my @retval;
+   $self->txn_do(
+      sub {
+         my $transfer = $self->transfer_record($transfer_input);
+         @retval = (
+            $transfer,
+            $self->distribution_split(
+               %$split,    # all split inputs are fine...
+               transfer => $transfer    # ... except this
+            )
+         );
+         return;
+      }
+   );
+   return @retval if wantarray();
+   return \@retval;
+}
 
 sub transfer_delete {
    my ($self, $transfer) = @_;
@@ -401,48 +466,6 @@ sub transfer_record {
    return $transfer;
 } ## end sub transfer_record
 
-sub transfer_and_contribution_split {
-   my $self = shift;
-   my ($transfer_input, $split) = @_;
-   my @retval;
-   $self->txn_do(
-      sub {
-         my $transfer = $self->transfer_record($transfer_input);
-         @retval = (
-            $transfer,
-            $self->transfer_contribution_split(
-               %$split,    # all split inputs are fine...
-               transfer => $transfer    # ... except this
-            )
-         );
-         return;
-      }
-   );
-   return @retval if wantarray();
-   return \@retval;
-} ## end sub transfer_record_and_contribution_split
-
-sub transfer_and_distribution_split {
-   my $self = shift;
-   my ($transfer_input, $split) = @_;
-   my @retval;
-   $self->txn_do(
-      sub {
-         my $transfer = $self->transfer_record($transfer_input);
-         @retval = (
-            $transfer,
-            $self->transfer_distribution_split(
-               %$split,    # all split inputs are fine...
-               transfer => $transfer    # ... except this
-            )
-         );
-         return;
-      }
-   );
-   return @retval if wantarray();
-   return \@retval;
-}
-
 sub _transfer_split {
    my $self   = shift;
    my $params = shift;
@@ -488,29 +511,6 @@ sub _transfer_split {
    return @retval if wantarray();
    return \@retval;
 } ## end sub _transfer_split
-
-sub multi_transfers_record {
-   my $self            = shift;
-   my @input_transfers = @_;
-   my @output_transfers;
-   $self->txn_do(
-      sub {
-         for my $idx (0 .. $#input_transfers) {
-            my %input = %{$input_transfers[$idx]};
-            if (defined $input{parent}) {
-               if (my ($i) = $input{parent} =~ m<\A \[ (\d+) \] \z>mxs) {
-                  croak "transfer $idx can only reference previous ones"
-                    if $i >= $idx;
-                  $input{parent} = $output_transfers[$i];
-               }
-            } ## end if (defined $input{parent...})
-            push @output_transfers, $self->transfer_record(\%input);
-         } ## end for my $idx (0 .. $#input_transfers)
-      }
-   );
-   return @output_transfers if wantarray();
-   return \@output_transfers;
-} ## end sub multi_transfers_record
 
 1;
 __END__

@@ -42,6 +42,7 @@
             "DBIx::Class" : "0.082840",
             "DateTime" : "1.36",
             "DateTime::Format::ISO8601" : "0.08",
+            "DateTime::Format::SQLite" : "0.11",
             "perl" : "5.010"
          }
       },
@@ -49,6 +50,7 @@
          "requires" : {
             "DBD::SQLite" : "1.50",
             "Path::Tiny" : "0.096",
+            "Test::Exception" : "0.43",
             "Test::More" : "0.88"
          }
       }

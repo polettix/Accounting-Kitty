@@ -176,13 +176,7 @@ both accounts still have the same weight).
 
 =head3 Finance Quota Groups
 
-
-
-=head1 FUNCTIONS
-
-=head2 B<< whatever >>
-
-
+FIXME
 
 =head1 METHODS
 
@@ -204,6 +198,28 @@ objects back) or in scalar context (getting an anonymous array back).
 You can optionally pass a C<@query> compatible with
 L<DBIx::Class::Schema/resultset>; otherwise, all accounts will be
 returned.
+
+=head2 B<< contribution_split >>
+
+   my @transfers = $ak->contribution_split(\%def);
+   my $transfers = $ak->contribution_split(\%def);
+
+split a transfer into contribution parts. Returns the list of generated
+transfers or a reference to an array with the list, in scalar context.
+
+See L</Transfer Splitting> for details on the parameters in the input
+hash.
+
+=head2 B<< distribution_split >>
+
+   my @transfers = $ak->distribution_split(\%def);
+   my $transfers = $ak->distribution_split(\%def);
+
+split a transfer into distribution parts. Returns the list of generated
+transfers or a reference to an array with the list, in scalar context.
+
+See L</Transfer Splitting> for details on the parameters in the input
+hash.
 
 =head2 B<< fetch >>
 
@@ -252,6 +268,55 @@ and name "Foo". All calls to fetch return the same account:
    my $by_id   = $ak->fetch(Account => 1);
    my $by_obj  = $ak->fetch(Account => $by_id);
    my $by_name = $ak->fetch(Account => {name => 'Foo'});
+
+=head2 B<< initialize_tables >>
+
+   $ak->initialize_tables();
+
+setup initial tables in the database. The schema provided is good for
+SQLite, in other DB engines your mileage may vary. Returns nothing.
+
+=head2 B<< multi_transfers_record >>
+
+   my @transfers = $ak->multi_transfer_record(@transfers);
+
+record multiple, possibly related, transfers in a single transaction.
+Returns the newly created transfers.
+
+Each item in C<@transfers> is a hash reference compatible suitable for
+L</transfer_record>. The only exception is that parameter C<parent> can
+be set to reference elements in C<@transfers> that occur I<before> the
+specific transfer to be recorded, indicating the parent transfer index
+as a string between brackets.
+
+In the following example, we ask the creation of three transfers, the
+first one being the parent of the following two. As you can see, the
+C<parent> key in the child transfers is a string with a C<0> in
+brackets; the C<0> indicates the index of the first transfer in the
+provided list (i.e. the C<prova (main)> transfer at the beginning).
+
+   @transfers = $ak->multi_transfers_record(
+      {
+         src    => 1,
+         dst    => 2,
+         title  => 'prova (main)',
+         amount => 10000,
+      },
+      {
+         src    => 2,
+         dst    => 3,
+         title  => 'prova (first)',
+         amount => 7000,
+         parent => '[0]',
+      },
+      {
+         src    => 2,
+         dst    => 4,
+         title  => 'prova (second)',
+         amount => 3000,
+         parent => '[0]',
+      },
+   );
 
 =head2 B<< quota_groups >>
 
@@ -309,18 +374,37 @@ the next quota sub-group identifier.
 
 =back
 
+=head2 B<< transfer_and_contribution_split >>
 
-=head2 B<< transfer_contribution_split >>
+   my @transfers = $ak->transfer_and_contribution_split(
+      $transfer, $split);
+   my $transfers = $ak->transfer_and_contribution_split(
+      $transfer, $split);
 
-   $ak->transfer_contribution_split(\%def);
+perform a transfer and its split into contributions in one single
+transaction. C<$transfer> is a hash reference compatible with
+L</transfer_record>; C<$split> is a split definition compatible with
+L</contribution_split> (you can of course omit the transfer in this
+case, as it will be overridden by the one created from C<$transfer>).
 
-See L</Transfer Splitting>.
+Returns the list of transfers created, or a reference to an array with
+the list in scalar context.
 
-=head2 B<< transfer_distribution_split >>
+=head2 B<< transfer_and_distribution_split >>
 
-   $ak->transfer_distribution_split(\%def);
+   my @transfers = $ak->transfer_and_distribution_split(
+      $transfer, $split);
+   my $transfers = $ak->transfer_and_distribution_split(
+      $transfer, $split);
 
-See L</Transfer Splitting>.
+perform a transfer and its split into distributions in one single
+transaction. C<$transfer> is a hash reference compatible with
+L</transfer_record>; C<$split> is a split definition compatible with
+L</distribution_split> (you can of course omit the transfer in this
+case, as it will be overridden by the one created from C<$transfer>).
+
+Returns the list of transfers created, or a reference to an array with
+the list in scalar context.
 
 =head2 B<< transfer_delete >>
 

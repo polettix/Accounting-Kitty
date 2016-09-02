@@ -18,7 +18,7 @@ subtest 'distribution' => sub {
    my $sfoo = $foo->total();
 
    lives_ok {
-      $ak->transfer_distribution_split(
+      $ak->distribution_split(
          transfer => 1,
          quotas   => [
             {account => 3, amount => 700,},
@@ -26,7 +26,7 @@ subtest 'distribution' => sub {
          ]
       );
    } ## end lives_ok
-   'transfer_distribution_split lives';
+   'distribution_split lives';
 
    @transfers = $ak->fetch(Transfer => {parent_id => 1});
    is scalar(@transfers), 3, 'three transfers under parent 1 now';
