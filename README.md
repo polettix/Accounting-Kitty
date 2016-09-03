@@ -184,9 +184,9 @@ resources decremented (to "participate" in the transfer); in a
 _distribution_, instead, the original transfer is split across multiple
 destinations, increasing their resources.
 
-To generate transfers for a split, use ["transfer\_contribution\_split"](#transfer_contribution_split)
-and ["transfer\_distribution\_split"](#transfer_distribution_split). They have the same interface,
-accepting a hash reference `\%def` with the following keys:
+To generate transfers for a split, use ["contribution\_split"](#contribution_split) and
+["distribution\_split"](#distribution_split). They have the same interface, accepting a hash
+reference `\%def` with the following keys:
 
 - `date`
 
@@ -222,10 +222,9 @@ accepting a hash reference `\%def` with the following keys:
 
 ## Quotas
 
-In ["transfer\_contribution\_split"](#transfer_contribution_split) and ["transfer\_distribution\_split"](#transfer_distribution_split),
-there are a few ways in which you can divide a transfer into _quotas_
-(via parameter ["quota\_type"](#quota_type)), depending on the flexibility level that
-you need.
+In ["contribution\_split"](#contribution_split) and ["distribution\_split"](#distribution_split), there are a few
+ways in which you can divide a transfer into _quotas_ (via parameter
+["quota\_type"](#quota_type)), depending on the flexibility level that you need.
 
 The most flexible way is to pass an array reference containing hashes
 with the following fields:

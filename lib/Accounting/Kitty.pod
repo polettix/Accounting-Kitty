@@ -189,9 +189,9 @@ resources decremented (to "participate" in the transfer); in a
 I<distribution>, instead, the original transfer is split across multiple
 destinations, increasing their resources.
 
-To generate transfers for a split, use L</transfer_contribution_split>
-and L</transfer_distribution_split>. They have the same interface,
-accepting a hash reference C<\%def> with the following keys:
+To generate transfers for a split, use L</contribution_split> and
+L</distribution_split>. They have the same interface, accepting a hash
+reference C<\%def> with the following keys:
 
 =over
 
@@ -231,10 +231,9 @@ the transaction to be split.
 
 =head2 Quotas
 
-In L</transfer_contribution_split> and L</transfer_distribution_split>,
-there are a few ways in which you can divide a transfer into I<quotas>
-(via parameter L</quota_type>), depending on the flexibility level that
-you need.
+In L</contribution_split> and L</distribution_split>, there are a few
+ways in which you can divide a transfer into I<quotas> (via parameter
+L</quota_type>), depending on the flexibility level that you need.
 
 The most flexible way is to pass an array reference containing hashes
 with the following fields:

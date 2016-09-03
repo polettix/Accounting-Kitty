@@ -2,8 +2,6 @@
 
 Accounting::Kitty::Result::Owner
 
-=head1 TABLE: C<owner>
-
 =head1 ACCESSORS
 
 =head2 id
@@ -54,9 +52,5 @@ Related object: L<Accounting::Kitty::Result::Quota>
 Type: has_many
 
 Related object: L<Accounting::Kitty::Result::Transfer>
-
-=cut
-
-
 
 =cut
