@@ -18,18 +18,15 @@ use Accounting::Kitty::Util qw< round >;
 use base 'DBIx::Class::Schema';
 __PACKAGE__->load_namespaces;
 
-sub accounts {
+sub accounts { return shift->_all_of(Account => @_) }
+
+sub _all_of {
    my $self = shift;
-   my @retval;
-   if (@_) {
-      @retval = $self->resultset('Account')->search(@_);
-   }
-   else {
-      @retval = $self->resultset('Account')->all();
-   }
+   my $rs = $self->resultset(shift);
+   my @retval = @_ ? $rs->search(@_) : $rs->all();
    return @retval if wantarray();
    return \@retval;
-} ## end sub accounts
+}
 
 sub contribution_split {
    my $self   = shift;
@@ -146,7 +143,7 @@ sub _divide_in_quotas_plain {
 
    # The $reference will be the parent transaction.
    my $rs = $self->resultset('Quota');
-   my @quotas = map { {value => $_->value(), account => $_->account(),} }
+   my @quotas = map { {weight => $_->weight(), account => $_->account(),} }
      $rs->search({name => $quota_type}, {order_by => 'id'});
 
    return $self->_divide_in_quotas_weighted(\@quotas, $amount, $cb);
@@ -257,7 +254,7 @@ CREATE TABLE quota (
    id         INTEGER PRIMARY KEY,
    name       TEXT,
    account_id INTEGER REFERENCES account(id),
-   value      INTEGER
+   weight     INTEGER
 )
 END
       quota_finance => <<'END',
@@ -321,9 +318,13 @@ sub multi_transfers_record {
    return \@output_transfers;
 } ## end sub multi_transfers_record
 
+sub owners { return shift->_all_of(Owner => @_) }
+
+sub projects { return shift->_all_of(Project => @_) }
+
 sub quota_groups {
    my $self = shift;
-   my @qts = ($self->quota_types_plain(), $self->quota_types_finance());
+   my @qts = ($self->_quota_types_plain(), $self->_quota_types_finance());
    return @qts if wantarray();
    return \@qts;
 } ## end sub quota_groups
@@ -429,10 +430,8 @@ sub transfer_delete {
 sub transfer_record {
    my $self = shift;
    my $t = {(@_ && ref($_[0])) ? %{$_[0]} : @_};
-   my ($src, $dst) = $self->fetch(
-      Account => $t->{src},
-      Account => $t->{dst},
-   );
+   my $src = $self->fetch(Account => $t->{src});
+   my $dst = $self->fetch(Account => $t->{dst});
    my $amount = $t->{amount};
    my $invert = 0;
    ($amount, $src, $dst, $invert) = (-$amount, $dst, $src, 1)
@@ -471,10 +470,8 @@ sub _transfer_split {
    my $params = shift;
 
    # The $reference will be the parent transfer
-   my ($src, $dst) = $self->fetch(
-      Account => $params->{src},
-      Account => $params->{dst},
-   );
+   my $src = $self->fetch(Account => $params->{src});
+   my $dst = $self->fetch(Account => $params->{dst});
    croak "provide one of dst or src for splitting a transfer"
      unless defined($src // $dst);
    croak "provide only one of dst or src for splitting a transfer"

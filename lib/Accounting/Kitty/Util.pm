@@ -1,4 +1,4 @@
-package Accounting::Util::Kitty;
+package Accounting::Kitty::Util;
 
 use utf8;
 use strict;

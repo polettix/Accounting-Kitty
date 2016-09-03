@@ -38,7 +38,8 @@ __PACKAGE__->many_to_many(projects => accounts => 'project');
 
 sub _add {
    my ($self, $amount) = @_;
-   $self->total($self->total() + $amount);
+   my $current_total = $self->total() // 0;
+   $self->total($current_total + $amount);
    $self->update();
    return $self;
 } ## end sub add_amount

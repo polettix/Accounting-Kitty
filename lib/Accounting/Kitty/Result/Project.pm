@@ -37,6 +37,25 @@ sub as_hash {
    return \%cols;
 } ## end sub as_hash
 
-sub TO_JSON { return scalar shift->as_hash() }
+sub quota_finances {
+   my @retval = map { $_->quota_finances() } shift->accounts();
+   return @retval if wantarray();
+   return \@retval;
+}
+
+sub quotas {
+   my @retval = map { $_->quotas() } shift->accounts();
+   return @retval if wantarray();
+   return \@retval;
+}
+
+sub quotas_any {
+   my $self = shift;
+   my @retval = ($self->quotas(), $self->quota_finances());
+   return @retval if wantarray();
+   return \@retval;
+}
+
+sub TO_JSON { return scalar(shift->as_hash()) }
 
 1;

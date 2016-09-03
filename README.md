@@ -10,6 +10,153 @@ This document describes Accounting::Kitty version {{\[ version \]}}.
 
     use Accounting::Kitty;
 
+    # it's based on DBIx::Class... so you have connect() instead
+    # of new()...
+    my $ak = Accounting::Kitty->connect(@DBI_params);
+
+    # if you stick with SQLite, you can auto-create tables
+    $ak->initialize_tables();
+
+    # it's not a tutorial on DBIx::Class, but you can get started
+    # like this
+    my $owner_rs = $ak->resultset('Owner');
+    my $foo_owner = $owner_rs->create({ key => 'FooOwner' });
+    my $bar_owner = $owner_rs->create({ key => 'BarOwner' });
+
+    my $project_rs = $ak->resultset('Project');
+    my $house_prj = $project_rs->create({ name => 'house' });
+    my $v2016_prj = $project_rs->create({ name => 'vacation 2016' });
+
+    my $account_rs = $ak->resultset('Account');
+    my $wife = $account_rs->create({
+       owner => $foo_owner,
+       project => $house_prj,
+       name => 'Wife',
+       total => 5000,
+    });
+    my $husband = $account_rs->create({
+       owner => $bar_owner,
+       project => $house_prj,
+       name => 'Husband',
+       total => 5000,
+    });
+    $account_rs->create({      # NOTE: NO OWNER HERE!
+       project => $house_prj,
+       name => 'External',
+       total => -10000,
+    });
+    my $common = $account_rs->create({      # NOTE: NO OWNER HERE!
+       project => $house_prj,
+       name => 'Common',
+       total => 0,
+    });
+
+    # make sure we reload all stuff from DB
+    $_->discard_changes() for ($wife, $husband, $common);
+
+    # time to add some quotas
+    my $quota_rs = $ak->resultset('Quota');
+
+    # the following quotas have the same name so the weights go
+    # together. To split equally, we set the same weight; we might
+    # as well set both to 50, or 100, or whatever positive integer
+    $quota_rs->create({
+       name => 'fifty-fifty',
+       account => $wife,
+       value => 1,
+    });
+    $quota_rs->create({
+       name => 'fifty-fifty',
+       account => $husband,
+       value => 1,
+    });
+
+    # the following quotas have different names so they are
+    # separated
+    $quota_rs->create({
+       name => '100% Wife',
+       account => $wife,
+       value => 1,            # whatever weight is fine
+    });
+    $quota_rs->create({
+       name => '100% Husband',
+       account => $husband,
+       value => 1,            # whatever weight is fine
+    });
+
+    # you can retrieve stuff by id, name or whatever query is
+    # supported in the DBIx::Class system
+    my ($wife, $husband, $owner1) = $ak->fetch(
+       Account => 1,                    # same as {id => 1}
+       Account => {name => 'Husband'},
+       Owner   => {key => 'FooOwner'},
+    );
+
+    # start transferring resources around, one transfer
+    my $t1 = $ak->transfer_record(
+       src => {name => 'External'},
+       dst => {name => 'Common'},
+       amount => 10000,            # stick to integers
+       title  => 'donation from a rich uncle',
+    );
+
+    # distribute it, returns all distribution transfers back
+    my @dt1 = $ak->distribution_split(
+       transfer => $t1,
+       quotas => 'fifty-fifty', # subject to change
+    );
+
+    # these transfers go together or fail together. The result is
+    # quite similar to the transfer and distribution above, except
+    # for the parts (Wife gets more here!)
+    my @closeby = $ak->multi_transfers_record(
+       {
+          src    => { name => 'External' },
+          dst    => $common,
+          title  => 'prova (main)',
+          amount => 10000,
+       },
+       {
+          src    => $common,
+          dst    => $wife,
+          title  => 'prova (first)',
+          amount => 7000,
+          parent => '[0]',  # refers to the first transfer in list
+       },
+       {
+          src    => $common,
+          dst    => $husband,
+          title  => 'prova (second)',
+          amount => 3000,
+          parent => '[0]',  # refest to the first transfer in list
+       },
+    );
+
+    # of course if you want to take advantage of quotas you can do
+    # this atomically too. Here the Husband takes more, otherwise it's
+    # equivalent to the calls above
+    my @transfers = $ak->transfer_and_distribution_split(
+       {    # this is the transfer
+          src    => { name => 'External' },
+          dst    => $common,
+          title  => 'prova (main)',
+          amount => 10000,
+       },
+       {    # this is the contribution split
+          quotas => [
+             {
+                account => $wife,
+                amount  => 3000,
+             },
+             {
+                account => $husband,
+                amount  => 7000,
+             }
+          ],
+          title => 'prova (distribution)',
+       },
+    );
+
 # DESCRIPTION
 
 This module allows you to manage a simple shared fund of money (or
@@ -150,7 +297,64 @@ both accounts still have the same weight).
 
 ### Finance Quota Groups
 
-FIXME
+Finance quota groups are useful for dealing with shared long-term
+divisions, like mortgages. As a matter of fact, it's designed around
+mortgages where you know in anticipation what capital is going to be
+provided by all participants at a given step, but you have to figure out
+how to divide the (possibly variable) interest part.
+
+Suppose that Alice and Bob are sharing a payment plan where they are
+supposed to give back 10000 (capital) resources in 5 steps of 2000
+resources each. They decided to split this capital part as follows, to
+cope with Bob's initial difficulties:
+
+    Capital quotas by step
+
+    Step 1    Alice 1500   Bob  500   Total  2000
+    Step 2    Alice 1200   Bob  800   Total  2000
+    Step 3    Alice 1000   Bob 1000   Total  2000
+    Step 4    Alice  800   Bob 1200   Total  2000
+    Step 5    Alice  500   Bob 1500   Total  2000
+    ---------------------------------------------
+    Total     Alice 5000   Bob 5000   Total 10000
+
+They have a variable interest and their invoice at step 2 amounts to
+2400 resources. How should they split it?
+
+According to their plan, Alice will provide 1200 resources to cope with
+the capital part, and Bob will provide the remaining 800. Now there are
+400 resources left, that have to be divided in some fair way between the
+two.
+
+To do a fair split of the interest, it's useful to take a look at the
+table of residual capital parts at each step:
+
+    Capital residuals at beginnin of the step
+
+    Step 1    Alice 5000   Bob 5000   Total 10000
+    Step 2    Alice 3500   Bob 4500   Total  8000
+    Step 3    Alice 2300   Bob 3700   Total  6000
+    Step 4    Alice 1300   Bob 2700   Total  4000
+    Step 5    Alice  500   Bob 1500   Total  2000
+
+At the beginning of step 2, Bob still has to give 4500 resources back,
+while Alice owes 3500. These numbers are then used as weights to divide
+the 400 interest resources:
+
+    Interest quotas
+
+    Step 2    Alice  175   Bob  225   Total   400
+
+As expected, Bob is paying some more resources of interest for the
+privilege of a slower initial payback arrangement. So, quotas for this
+second step will be:
+
+    Overall quotas
+
+    Step 2    Alice 1375   Bob 1025   Total  2400
+
+See [QuotaFinance](https://metacpan.org/pod/QuotaFinance) for details on the knobs you have to manage quota
+finance groups.
 
 # METHODS
 
@@ -279,6 +483,20 @@ provided list (i.e. the `prova (main)` transfer at the beginning).
           parent => '[0]',
        },
     );
+
+## **owners**
+
+    my @owners = $ak->owners();
+    my $owners = $ak->owners();
+
+get a list of an array reference with the list of owners.
+
+## **projects**
+
+    my @projects = $ak->projects();
+    my $projects = $ak->projects();
+
+get a list of an array reference with the list of projects.
 
 ## **quota\_groups**
 
@@ -417,10 +635,6 @@ provided `amount`).
 # BUGS AND LIMITATIONS
 
 Report bugs either through RT or GitHub (patches welcome).
-
-# SEE ALSO
-
-Foo::Bar.
 
 # AUTHOR
 

@@ -90,6 +90,22 @@ sub add_amount {
    return $self;
 } ## end sub add_amount
 
+sub as_hash {
+   my $self = shift;
+   my %retval = $self->get_columns();
+   $retval{owner}   = delete $retval{owner_id};
+   $retval{project} = delete $retval{project};
+   return %retval if wantarray();
+   return \%retval;
+} ## end sub as_hash
+
+sub quotas_any {
+   my $self = shift;
+   my @retval = ($self->quotas(), $self->quota_finances());
+   return @retval if wantarray();
+   return \@retval;
+}
+
 sub subtract_amount {
    my ($self, $amount) = @_;
    $self->total($self->total() - $amount);
@@ -118,19 +134,11 @@ sub transfers {
    return \@retval;
 } ## end sub transfers
 
-sub active_transfers {
+sub transfers_active {
    my $self = shift;
    return [grep { !$_->deleted() } @{$self->transfers(@_)}];
 }
 
-sub as_hash {
-   my $self = shift;
-   my $cols = $self->get_columns();
-   $cols->{owner}   = delete $cols->{owner_id};
-   $cols->{project} = delete $cols->{project};
-   return $cols;
-} ## end sub as_hash
-
-*TO_JSON = \&as_hash;
+sub TO_JSON { return scalar(shift->as_hash()) }
 
 1;

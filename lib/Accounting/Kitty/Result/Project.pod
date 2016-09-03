@@ -1,0 +1,164 @@
+=pod
+
+=encoding utf8
+
+=head1 NAME
+
+Accounting::Kitty::Project - Class for representing a Project
+
+=head1 SYNOPSIS
+
+   use Accounting::Kitty;
+   my $ak = Accounting::Kitty->connect(@DBI_params);
+
+   my $project = $ak->fetch(Project => $project_id);
+   my $p2      = $ak->fetch(Project => {name => 'Summer Vacations'});
+
+   my $id   = $project->id();
+   my $name = $project->name();
+   my $data = $project->data();
+
+   # Accounting::Kitty::Account objects
+   my @accounts = $project->accounts();
+
+   # Accounting::Kitty::Quota objects
+   my @plain_quotas = $project->quotas();
+
+   # Accounting::Kitty::QuotaFinance objects
+   my @finance_quotas = $project->quota_finances();
+
+   # Accounting::Kitty::(Quota|QuotaFinance) objects
+   my @any_quotas = $project->quotas_any();
+
+   my %hash    = $project->as_hash();
+   my $hashref = $project->as_hash();
+   my $hashref = $project->TO_JSON();
+
+=head1 DESCRIPTION
+
+This module (class) represents a Project in L<Accounting::Kitty>.
+
+A project can be thought as a set of accounts that share a common kitty.
+This means that:
+
+=over
+
+=item *
+
+each account belongs to exactly one project. You can get a list of
+accounts via the L</accounts> method;
+
+=item *
+
+each account also belongs to exactly one owner, so you can get the list
+of owners via the L</owners> method;
+
+=item *
+
+each account comes with associated quotas, which by transitive property
+belong to exactly one project. You can get quotas via methods
+L</quotas>, L</quota_finances> and L</quotas_any>
+
+=back
+
+
+=head1 METHODS
+
+C<Accounting::Kitty> inherits from L<DBIx::Class::Core>, so it gets
+all its methods. Most notably, it represents a row in the database.
+
+=head2 B<< accounts >>
+
+   my @accounts = $project->accounts();
+
+retrieve a list of L<Accounting::Kitty::Result::Account> objects. It is
+build via L<DBIx::Class::Relationship/has_many> so it gets all the slick
+features.
+
+=head2 B<< as_hash >>
+
+   my $href = $project->as_hash();
+   my %hash = $project->as_hash();
+
+get a plain hash/hashref (depending on calling context) representation
+of the project.
+
+=head2 B<< id >>
+
+   my $id = $project->id();
+
+get the unique identifier for the project (primary key in the database).
+
+=head2 B<< name >>
+
+   my $name = $project->name();
+   $project->name('Blurb!');
+
+get/set the name of the project.
+
+=head2 B<< data >>
+
+   my $data = $project->data();
+   $project->data($string);
+
+get/set some opaque data associated to the project. This can come handy
+if you need to store some additional data when doing simple
+integrations.
+
+=head2 B<< owners >>
+
+   my @owners = $project->owners();
+
+retrieve a list of L<Accounting::Kitty::Result::Owner> objects. It is
+build via L<DBIx::Class::Relationship/many_to_many> so it gets all the
+slick features.
+
+=head2 B<< quota_finances >>
+
+   my @quotas = $project->quota_finances();
+   my $quotas = $project->quota_finances();
+
+retrieve a list of L<Accounting::Kitty::Result::QuotaFinance> objects
+associated to the project via their accounts. Returns a reference to an
+array containing the list when called in scalar context.
+
+=head2 B<< quotas >>
+
+   my @quotas = $project->quotas();
+
+retrieve a list of L<Accounting::Kitty::Result::Quota> objects associated
+to the project via their accounts. Returns a reference to an array
+containing the list when called in scalar context.
+
+=head2 B<< quotas_any >>
+
+   my @quotas = $project->quotas_any();
+
+retrieve a list of L<Accounting::Kitty::Result::Quota> and
+L<Accounting::Kitty::Result::QuotaFinance> objects associated to the
+project via their accounts. Returns a reference to an array containing
+the list when called in scalar context.
+
+=head2 B<< TO_JSON >>
+
+   my $href = $project->TO_JSON();
+
+get a plain hashref representation of the project.
+
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
