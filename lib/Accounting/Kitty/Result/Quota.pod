@@ -1,0 +1,156 @@
+=pod
+
+=encoding utf8
+
+=head1 NAME
+
+Accounting::Kitty::Quota - Class for representing a plain quota
+
+=head1 SYNOPSIS
+
+   use Accounting::Kitty;
+   my $ak = Accounting::Kitty->connect(@DBI_params);
+
+   # you usually get one or more quotas for a name
+   my @quotas = $ak->fetch(Quota => {name => 'fifty-fifty'});
+
+   # additionally, you'll probably be interested into all quotas that
+   # are related to a specific account or project actually
+   my $project = $ak->fetch(Project => {name => 'House'})
+   my @quotas_for_project = $project->quotas();
+
+   # let's concentrate on one of them now
+   my $quota = shift @quotas_for_project;
+
+   my $id     = $quota->id();
+   my $weight = $quota->weight();
+
+   # the name is not unique and might be:
+   # * shared across multiple accounts in the same project, to indicate
+   #   a split via weights
+   # * reused through accounts in different projects
+   my $name = $quota->name();
+
+   # Accounting::Kitty::Account object
+   my $account = $quota->account();
+
+   my %hash    = $project->as_hash();
+   my $hashref = $project->as_hash();
+   my $hashref = $project->TO_JSON();
+
+=head1 DESCRIPTION
+
+This module (class) represents a simple quota in L<Accounting::Kitty>.
+
+Quotas describe how to perform a weighted split over multiple accounts.
+As such, they usually come in groups (although a quota group might have
+a single item inside) that share the same name and belong to accounts
+under the same project. For example, you might have a project I<Summer
+Vacations> with three accounts Alice, Bob and Carol, and an equal split
+definition named C<Equal Parts> like this:
+
+   project "Summer Vacations"
+      accounts: Alice, Bob, Carol
+
+   quota #1:
+      name:    "Equal Parts"
+      account: Alice
+      weight:  1
+
+   quota #2:
+      name:    "Equal Parts"
+      account: Bob
+      weight:  1
+
+   quota #3:
+      name:    "Equal Parts"
+      account: Carol
+      weight:  1
+
+As they have the same weight, when this quota group is used they will
+share the same amount, which means that anything will be divided by
+three.
+
+Each quota item belongs to exactly one account, that you can retrieve
+via method L</account>. As each account belongs to exactly one project,
+by transitive property a quota belongs to exactly one project, which you
+can retrieve via method L</project>.
+
+=head1 METHODS
+
+C<Accounting::Kitty::Result::Quota> inherits from L<DBIx::Class::Core>,
+so it gets all its methods. Most notably, it represents a row in the
+database.
+
+=head2 B<< account >>
+
+   my $account = $quota->account();
+
+retrieve the L<Accounting::Kitty::Result::Account> objects "owning" this
+quota. It is built via L<DBIx::Class::Relationship/belongs_to> so it
+gets all the slick features.
+
+=head2 B<< as_hash >>
+
+   my $href = $quota->as_hash();
+   my %hash = $quota->as_hash();
+
+get a plain hash/hashref (depending on calling context) representation
+of the quota.
+
+=head2 B<< id >>
+
+   my $id = $quota->id();
+
+get the unique identifier for the quota (primary key in the database).
+
+=head2 B<< name >>
+
+   my $name = $quota->name();
+   $quota->name('Blurb!');
+
+get/set the name of the quota (which is actually shared across all items
+in the quota group).
+
+=head2 B<< project >>
+
+   my @owners = $quota->project();
+
+retrieve the L<Accounting::Kitty::Result::Project> project that "owns"
+the quota (via the relevant account).
+
+=head2 B<< TO_JSON >>
+
+   my $href = $quota->TO_JSON();
+
+get a plain hashref representation of the quota.
+
+=head2 B<< weight >>
+
+   my $weight = $quota->weight();
+   $quota->weight(100);
+
+get/set the weight of the quota. The weight's meaning is provided not by
+its absolute value, of course, but its relative value with respect to
+the weights in the same quota group. As such, if you want to create a
+quota group for equal splitting across N accounts, you can just put the
+same weight equal to 1 (or to 10, 23, or whatever you can think of),
+because as long as they are all the same value they will yield an equal
+split (not considering the decimals, of course).
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
