@@ -93,8 +93,6 @@ sub add_amount {
 sub as_hash {
    my $self = shift;
    my %retval = $self->get_columns();
-   $retval{owner}   = delete $retval{owner_id};
-   $retval{project} = delete $retval{project};
    return %retval if wantarray();
    return \%retval;
 } ## end sub as_hash
