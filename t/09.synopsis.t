@@ -98,7 +98,7 @@ my @quotas = $quota_rs->all();
 is scalar(@quotas), 4, 'four quotas in DB';
 
 # start transferring resources around, one transfer
-my $t1 = $ak->transfer_record(
+my $t1 = $ak->create_transfer(
    src    => {name => 'External'},
    dst    => {name => 'Common'},
    amount => 10000, # stick to integers

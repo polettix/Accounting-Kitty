@@ -17,7 +17,7 @@ TestLib::populate($ak);
 subtest 'basic transfer' => sub {
    my $transfer;
    lives_ok {
-      $transfer = $ak->transfer_record(
+      $transfer = $ak->create_transfer(
          src         => 3,
          dst         => 4,
          amount      => 1000,
@@ -40,7 +40,7 @@ subtest 'basic transfer' => sub {
 subtest 'transfer with negative amount (inversion)' => sub {
    my $transfer;
    lives_ok {
-      $transfer = $ak->transfer_record(
+      $transfer = $ak->create_transfer(
          src         => 3,
          dst         => 4,
          amount      => -1000,
@@ -68,7 +68,7 @@ subtest 'transfer with src object and dst id' => sub {
    my $transfer;
    my $foo = $ak->fetch(Account => {name => 'Foo'});
    lives_ok {
-      $transfer = $ak->transfer_record(
+      $transfer = $ak->create_transfer(
          src    => $foo,
          dst    => 4,
          amount => 1000,

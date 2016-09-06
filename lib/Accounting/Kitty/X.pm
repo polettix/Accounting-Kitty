@@ -6,7 +6,7 @@ use warnings;
 use 5.010;
 { our $VERSION = '0.001'; }
 
-use overload (q<""> => 'expanded_message');
+use overload (q<""> => sub { shift->expanded_message() });
 
 use Moo;
 use Scalar::Util qw< blessed >;
@@ -33,7 +33,7 @@ has message => (
 );
 
 has expanded_message => (
-   is => 'ro',
+   is => 'rw',
    lazy => 1,
    builder => '_BUILD_expanded_message',
 );

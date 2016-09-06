@@ -13,7 +13,8 @@ use 5.010;
 use List::Util qw< shuffle >;
 use Storable qw< dclone >;
 
-use Accounting::Kitty::Util qw< round >;
+use Accounting::Kitty::X ();
+use Accounting::Kitty::Util qw< round unwrap >;
 
 use base 'DBIx::Class::Schema';
 __PACKAGE__->load_namespaces;
@@ -21,12 +22,12 @@ __PACKAGE__->load_namespaces;
 sub accounts { return shift->_all_of(Account => @_) }
 
 sub _all_of {
-   my $self = shift;
-   my $rs = $self->resultset(shift);
+   my $self   = shift;
+   my $rs     = $self->resultset(shift);
    my @retval = @_ ? $rs->search(@_) : $rs->all();
    return @retval if wantarray();
    return \@retval;
-}
+} ## end sub _all_of
 
 sub contribution_split {
    my $self   = shift;
@@ -36,7 +37,98 @@ sub contribution_split {
    $params->{src} = undef;
    $params->{dst} = $t->src();
    return $self->_transfer_split($params);
-} ## end sub transfer_contribution_split
+} ## end sub contribution_split
+
+sub create_account {
+   my ($self, $args) = unwrap(@_);
+   Accounting::Kitty::X->throw(
+      message => 'No project in account creation request',
+      vars    => $args,
+   ) unless defined $args->{project};
+   my $project = $self->fetch(Project => $args->{project})
+     or Accounting::Kitty::X->throw(
+      message => 'Invalid project in account creation request',
+      vars    => $args,
+     );
+   my $owner = $self->fetch(Owner => $args->{owner});    # might be undef
+   return $self->resultset('Account')->create(
+      {
+         project  => $project,
+         owner_id => ($owner ? $owner->id() : undef),
+         name     => $args->{name},
+         data     => $args->{data},
+         total => $args->{total} // 0,
+      }
+   );
+} ## end sub create_account
+
+sub create_owner {
+   my ($self, $args) = unwrap(@_);
+   Accounting::Kitty::X->throw(
+      message => 'Invalid owner key: undefined',
+      vars    => $args,
+   ) unless defined $args->{key};
+   return $self->resultset('Owner')->create(
+      {
+         key => $args->{key},
+         data => $args->{data},
+         total => $args->{total} // 0,
+      }
+   );
+}
+
+sub create_project {
+   my ($self, $args) = unwrap(@_);
+   return $self->resultset('Project')->create(
+      {
+         name => $args->{name},
+         data => $args->{data},
+      }
+   );
+}
+
+sub create_transfer {
+   my ($self, $args) = unwrap(@_);
+
+   my $src    = $self->fetch(Account => $args->{src});
+   my $dst    = $self->fetch(Account => $args->{dst});
+   my $amount = $args->{amount};
+
+   my $invert = 0;
+   ($amount, $src, $dst, $invert) = (-$amount, $dst, $src, 1)
+     if $amount < 0;
+
+   my $date = $args->{date} // DateTime->now();
+   $date = DateTime::Format::ISO8601->parse_datetime($date)
+     unless blessed($date) && $date->isa('DateTime');
+
+   my $parent_id = $args->{parent};
+   $parent_id = $parent_id->id() if ref $parent_id;
+
+   my $transfer = $self->resultset('Transfer')->create(
+      {
+         src         => $src,
+         dst         => $dst,
+         date_       => $date,
+         title       => $args->{title} // '',
+         description => $args->{description} // '',
+         amount      => $amount,
+         parent_id   => $parent_id,
+      }
+   );
+
+   if (!defined($parent_id)) {
+      $transfer->parent_id($transfer->id());
+      $transfer->update();
+   }
+
+   $transfer->invert($invert);
+
+   $src->subtract_amount($amount);
+   $dst->add_amount($amount);
+
+   return $transfer;
+} ## end sub create_transfer
 
 sub distribution_split {
    my $self   = shift;
@@ -46,7 +138,7 @@ sub distribution_split {
    $params->{src} = $t->dst();
    $params->{dst} = undef;
    return $self->_transfer_split($params);
-} ## end sub transfer_distribution_split
+} ## end sub distribution_split
 
 sub _divide_in_quotas {
    my ($self, $quota_type, $amount, $cb, $exact) = @_;
@@ -310,7 +402,7 @@ sub multi_transfers_record {
                   $input{parent} = $output_transfers[$i];
                }
             } ## end if (defined $input{parent...})
-            push @output_transfers, $self->transfer_record(\%input);
+            push @output_transfers, $self->create_transfer(\%input);
          } ## end for my $idx (0 .. $#input_transfers)
       }
    );
@@ -386,7 +478,7 @@ sub transfer_and_contribution_split {
    my @retval;
    $self->txn_do(
       sub {
-         my $transfer = $self->transfer_record($transfer_input);
+         my $transfer = $self->create_transfer($transfer_input);
          @retval = (
             $transfer,
             $self->contribution_split(
@@ -399,7 +491,7 @@ sub transfer_and_contribution_split {
    );
    return @retval if wantarray();
    return \@retval;
-} ## end sub transfer_record_and_contribution_split
+} ## end sub transfer_and_contribution_split
 
 sub transfer_and_distribution_split {
    my $self = shift;
@@ -407,7 +499,7 @@ sub transfer_and_distribution_split {
    my @retval;
    $self->txn_do(
       sub {
-         my $transfer = $self->transfer_record($transfer_input);
+         my $transfer = $self->create_transfer($transfer_input);
          @retval = (
             $transfer,
             $self->distribution_split(
@@ -420,50 +512,12 @@ sub transfer_and_distribution_split {
    );
    return @retval if wantarray();
    return \@retval;
-}
+} ## end sub transfer_and_distribution_split
 
 sub transfer_delete {
    my ($self, $transfer) = @_;
    $self->fetch(Transfer => $transfer)->mark_deleted();
 }
-
-sub transfer_record {
-   my $self = shift;
-   my $t = {(@_ && ref($_[0])) ? %{$_[0]} : @_};
-   my $src = $self->fetch(Account => $t->{src});
-   my $dst = $self->fetch(Account => $t->{dst});
-   my $amount = $t->{amount};
-   my $invert = 0;
-   ($amount, $src, $dst, $invert) = (-$amount, $dst, $src, 1)
-     if $amount < 0;
-   my $date = $t->{date} // DateTime->now();
-   $date = DateTime::Format::ISO8601->parse_datetime($date)
-     unless blessed($date) && $date->isa('DateTime');
-   my $parent_id = $t->{parent};
-   $parent_id = $parent_id->id() if ref $parent_id;
-   my $transfer = $self->resultset('Transfer')->create(
-      {
-         src         => $src,
-         dst         => $dst,
-         date_       => $date,
-         title       => $t->{title} // '',
-         description => $t->{description} // '',
-         amount      => $amount,
-         parent_id   => $parent_id,
-      }
-   );
-
-   if (!exists $t->{parent}) {
-      $transfer->parent_id($transfer->id());
-      $transfer->update();
-   }
-
-   $src->subtract_amount($amount);
-   $dst->add_amount($amount);
-
-   $transfer->invert($invert);
-   return $transfer;
-} ## end sub transfer_record
 
 sub _transfer_split {
    my $self   = shift;
@@ -491,7 +545,7 @@ sub _transfer_split {
       $amount,
       sub {
          for my $q (@_) {
-            push @retval, $self->transfer_record(
+            push @retval, $self->create_transfer(
                {
                   $reference->as_hash(),    # defaults from parent...
                   %$params,                 # what was passed in...

@@ -120,11 +120,11 @@ sub transfers {
    if ($count) {
       $query[1] = {
          rows     => $count,
-         order_by => {-desc => 'tdate'},
+         order_by => {-desc => 'date_'},
       };
    } ## end if ($count)
    my @retval = reverse sort {
-           ($a->get_column('tdate') cmp $b->get_column('tdate'))
+           ($a->get_column('date_') cmp $b->get_column('date_'))
         || ($a->get_column('id') <=> $b->get_column('id'))
    } ($self->transfer_dsts(@query), $self->transfer_srcs(@query));
    splice @retval, $count if $count && @retval >= $count;

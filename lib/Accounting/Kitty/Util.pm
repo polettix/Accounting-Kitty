@@ -7,7 +7,7 @@ use 5.010;
 { our $VERSION = '0.001'; }
 
 use Exporter 'import';
-our @EXPORT_OK = qw< int2dec round >;
+our @EXPORT_OK = qw< int2dec round unwrap unwrap_list >;
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
 sub int2dec {
@@ -25,6 +25,17 @@ sub int2dec {
 sub round {
    return -round(-$_[0]) if $_[0] < 0;
    return int($_[0] + 0.5);
+}
+
+sub unwrap {
+   my $object = shift;
+   my $args = (@_ && ref($_[0])) ? $_[0] : {@_};
+   return ($object, $args);
+}
+
+sub unwrap_list {
+   my ($object, $args) = unwrap(@_);
+   return ($object, %$args);
 }
 
 1;
