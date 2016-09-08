@@ -170,39 +170,38 @@ sub delete_transfer {
    );
    my $strategy = $args->{strategy} // 'subtree';
 
-   while ('necessary') {
-      if (($strategy eq 'subtree') || ($strategy eq 'children')){
-         $self->delete_transfer(transfer => $_, strategy => 'subtree')
-           for $transfer->proper_children();
-         $self->delete_single_transfer(transfer => $transfer)
-           if $strategy eq 'subtree';
+   # turn supertree and siblings into children or subtree
+   if ($strategy eq 'supertree') {
+      while (my $parent = $transfer->proper_parent()) {
+         $transfer = $parent;
       }
-      elsif ($strategy eq 'supertree') {
-         while (my $parent = $transfer->proper_parent()) {
-            $transfer = $parent;
-         }
-         $strategy = 'subtree';
-         redo;
-      }
-      elsif ($strategy eq 'siblings') {
-         if (my $parent = $transfer->proper_parent()) {
-            ($transfer, $strategy) = ($parent, 'children');
-            redo;
-         }
-         else {
-            $strategy = 'subtree'; # lone child, change strategy
-            redo;
-         }
+      $strategy = 'subtree';
+   }
+   elsif ($strategy eq 'siblings') {
+      if (my $parent = $transfer->proper_parent()) {
+         ($transfer, $strategy) = ($parent, 'children');
       }
       else {
-         Accounting::Kitty::X->throw(
-            code => 400,
-            message => "Unknown deletion strategy '$strategy'",
-            vars => $args
-         );
+         $strategy = 'subtree'; # lone child, change strategy
       }
    }
 
+   # at this point, we accept subtree and children only
+   if (($strategy eq 'subtree') || ($strategy eq 'children')){
+      $self->delete_transfer(transfer => $_, strategy => 'subtree')
+         for $transfer->proper_children();
+      $self->delete_single_transfer(transfer => $transfer)
+         if $strategy eq 'subtree';
+   }
+   else {
+      Accounting::Kitty::X->throw(
+         code => 400,
+         message => "Unknown deletion strategy '$strategy'",
+         vars => $args
+      );
+   }
+
+   return;
 }
 
 
