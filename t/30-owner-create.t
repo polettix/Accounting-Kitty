@@ -49,7 +49,7 @@ subtest 'owner creation failure, duplicate key' => sub {
          }
       );
    }
-   qr{(?i:UNIQUE constraint failed)},
+   qr{(?i:Invalid owner key, already present)},
      'cannot create without valid key';
 };
 
