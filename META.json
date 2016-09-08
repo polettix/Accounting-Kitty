@@ -43,6 +43,8 @@
             "DateTime" : "1.36",
             "DateTime::Format::ISO8601" : "0.08",
             "DateTime::Format::SQLite" : "0.11",
+            "Template::Perlish" : "1.52",
+            "Try::Tiny" : "0.27",
             "perl" : "5.010"
          }
       },
