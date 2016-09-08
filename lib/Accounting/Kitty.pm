@@ -12,6 +12,7 @@ use DateTime::Format::ISO8601 ();
 use 5.010;
 use List::Util qw< shuffle >;
 use Storable qw< dclone >;
+use Try::Tiny;
 
 use Accounting::Kitty::X ();
 use Accounting::Kitty::Util qw< round unwrap >;
@@ -68,13 +69,26 @@ sub create_owner {
       message => 'Invalid owner key: undefined',
       vars    => $args,
    ) unless defined $args->{key};
-   return $self->resultset('Owner')->create(
-      {
-         key => $args->{key},
-         data => $args->{data},
-         total => $args->{total} // 0,
-      }
-   );
+
+   return try {
+      $self->resultset('Owner')->create(
+         {
+            key => $args->{key},
+            data => $args->{data},
+            total => $args->{total} // 0,
+         }
+      );
+   }
+   catch {
+      my $e = $_;
+      die Accounting::Kitty::X->throw(
+         code => 409,
+         message => $e,
+         expanded_message => 'Invalid owner key, already present',
+         vars => $args,
+      ) if $e =~ m{UNIQUE};
+      die $e;
+   };
 }
 
 sub create_project {
