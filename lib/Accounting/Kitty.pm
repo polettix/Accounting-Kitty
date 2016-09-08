@@ -147,6 +147,66 @@ sub create_transfer {
    return $transfer;
 } ## end sub create_transfer
 
+sub delete_single_transfer {
+   my ($self, $args) = unwrap(@_);
+
+   my $transfer = $self->fetch(transfer => $args->{transfer})
+     or Accounting::Kitty::X->throw(
+         code => 404,
+         message => 'transfer does not exist',
+   );
+   $transfer->delete();
+
+   return;
+}
+
+sub delete_transfer {
+   my ($self, $args) = unwrap(@_);
+
+   my $transfer = $self->fetch(transfer => $args->{transfer})
+     or Accounting::Kitty::X->throw(
+         code => 404,
+         message => 'transfer does not exist',
+   );
+   my $strategy = $args->{strategy} // 'subtree';
+
+   while ('necessary') {
+      if (($strategy eq 'subtree') || ($strategy eq 'children')){
+         $self->delete_transfer(transfer => $_, strategy => 'subtree')
+           for $transfer->proper_children();
+         $self->delete_single_transfer(transfer => $transfer)
+           if $strategy eq 'subtree';
+      }
+      elsif ($strategy eq 'supertree') {
+         while (my $parent = $transfer->proper_parent()) {
+            $transfer = $parent;
+         }
+         $strategy = 'subtree';
+         redo;
+      }
+      elsif ($strategy eq 'siblings') {
+         if (my $parent = $transfer->proper_parent()) {
+            ($transfer, $strategy) = ($parent, 'children');
+            redo;
+         }
+         else {
+            $strategy = 'subtree'; # lone child, change strategy
+            redo;
+         }
+      }
+      else {
+         Accounting::Kitty::X->throw(
+            code => 400,
+            message => "Unknown deletion strategy '$strategy'",
+            vars => $args
+         );
+      }
+   }
+
+}
+
+
+
 sub distribution_split {
    my $self   = shift;
    my $params = {((@_ && ref($_[0])) ? %{$_[0]} : @_), src => undef,};
