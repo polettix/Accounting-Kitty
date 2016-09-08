@@ -4,6 +4,7 @@ requires 'DateTime::Format::ISO8601', '0.08';
 requires 'DBIx::Class',               '0.082840';
 requires 'DateTime::Format::SQLite',  '0.11';
 requires 'Template::Perlish',         '1.52';
+requires 'Try::Tiny',                 '0.27';
 
 on test => sub {
    requires 'Test::More',      '0.88';
