@@ -44,14 +44,17 @@ sub create_account {
    my ($self, $args) = unwrap(@_);
    Accounting::Kitty::X->throw(
       message => 'No project in account creation request',
+      code  => 400,
       vars    => $args,
    ) unless defined $args->{project};
    my $project = $self->fetch(Project => $args->{project})
      or Accounting::Kitty::X->throw(
       message => 'Invalid project in account creation request',
+      code  => 400,
       vars    => $args,
      );
    my $owner = $self->fetch(Owner => $args->{owner});    # might be undef
+
    return $self->resultset('Account')->create(
       {
          project  => $project,
