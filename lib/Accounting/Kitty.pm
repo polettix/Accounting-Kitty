@@ -150,10 +150,10 @@ sub create_transfer {
 sub delete_single_transfer {
    my ($self, $args) = unwrap(@_);
 
-   my $transfer = $self->fetch(transfer => $args->{transfer})
+   my $transfer = $self->fetch(Transfer => $args->{transfer})
      or Accounting::Kitty::X->throw(
          code => 404,
-         message => 'transfer does not exist',
+         message => 'Transfer does not exist',
    );
    $transfer->delete();
 
@@ -163,10 +163,10 @@ sub delete_single_transfer {
 sub delete_transfer {
    my ($self, $args) = unwrap(@_);
 
-   my $transfer = $self->fetch(transfer => $args->{transfer})
+   my $transfer = $self->fetch(Transfer => $args->{transfer})
      or Accounting::Kitty::X->throw(
          code => 404,
-         message => 'transfer does not exist',
+         message => 'Transfer does not exist',
    );
    my $strategy = $args->{strategy} // 'subtree';
 
