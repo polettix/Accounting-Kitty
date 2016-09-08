@@ -490,6 +490,8 @@ sub owners { return shift->_all_of(Owner => @_) }
 
 sub projects { return shift->_all_of(Project => @_) }
 
+sub transfers { return shift->_all_of(Transfer => @_) }
+
 sub quota_groups {
    my $self = shift;
    my @qts = ($self->_quota_types_plain(), $self->_quota_types_finance());
