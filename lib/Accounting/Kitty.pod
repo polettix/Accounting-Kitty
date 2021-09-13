@@ -171,7 +171,7 @@ you to perform operations like adding or subtracting from the fund.
 
 The basic working is that of a double entry system: every transaction
 always involves two parties. It's possible to handle multiparty
-transactions too, but they always resolve to be man two-party
+transactions too, but they always resolve to be many two-party
 transactions actually. In its current state, it allows to easily track
 expenses that should be split across multiple participants, possibly
 according to a given preset scheme (e.g. equal split, or weighted, or
