@@ -23,7 +23,7 @@ sub kitty {
       $retval->initialize_tables(check => $check);
       populate($retval) if $opts{populate};
       $retval;
-   } or do {
+   } || do {
       warn $@;
       undef;
    };
