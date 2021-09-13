@@ -169,7 +169,7 @@ DISTRIBUTIONS
       DBD::SQLite::VirtualTable::PerlData::Cursor undef
     requirements:
       DBI 1.57
-      ExtUtils::MakeMaker 6.48
+      ExtUtils::MakeMaker 0
       File::Spec 0.82
       Test::Builder 0.86
       Test::More 0.47
@@ -406,7 +406,6 @@ DISTRIBUTIONS
       Data::Page 2.02
     requirements:
       Class::Accessor::Chained::Fast 0
-      Module::Build 0.35
       Test::Exception 0
       Test::More 0
   DateTime-1.36
@@ -472,7 +471,6 @@ DISTRIBUTIONS
     requirements:
       DateTime 0.18
       DateTime::Format::Builder 0.77
-      Module::Build 0.38
   DateTime-Format-SQLite-0.11
     pathname: C/CF/CFAERBER/DateTime-Format-SQLite-0.11.tar.gz
     provides:
@@ -481,6 +479,7 @@ DISTRIBUTIONS
       DateTime 0.1
       DateTime::Format::Builder 0.6
       ExtUtils::MakeMaker 0
+      perl 5.003
   DateTime-Format-Strptime-1.68
     pathname: D/DR/DROLSKY/DateTime-Format-Strptime-1.68.tar.gz
     provides:
@@ -913,19 +912,16 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Sub::Exporter::Progressive 0.001011
       perl 5.006
-  Devel-StackTrace-2.01
-    pathname: D/DR/DROLSKY/Devel-StackTrace-2.01.tar.gz
+  Devel-Symdump-2.18
+    pathname: A/AN/ANDK/Devel-Symdump-2.18.tar.gz
     provides:
-      Devel::StackTrace 2.01
-      Devel::StackTrace::Frame 2.01
+      Devel::Symdump 2.18
+      Devel::Symdump::Export undef
     requirements:
+      Compress::Zlib 0
       ExtUtils::MakeMaker 0
-      File::Spec 0
-      Scalar::Util 0
-      overload 0
-      perl 5.006
-      strict 0
-      warnings 0
+      Test::More 0
+      perl 5.004
   Dist-CheckConflicts-0.11
     pathname: D/DO/DOY/Dist-CheckConflicts-0.11.tar.gz
     provides:
@@ -993,6 +989,52 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 6.59
       Test::More 0.47
       perl 5.006
+  Module-Build-0.4231
+    pathname: L/LE/LEONT/Module-Build-0.4231.tar.gz
+    provides:
+      Module::Build 0.4231
+      Module::Build::Base 0.4231
+      Module::Build::Compat 0.4231
+      Module::Build::Config 0.4231
+      Module::Build::Cookbook 0.4231
+      Module::Build::Dumper 0.4231
+      Module::Build::Notes 0.4231
+      Module::Build::PPMMaker 0.4231
+      Module::Build::Platform::Default 0.4231
+      Module::Build::Platform::MacOS 0.4231
+      Module::Build::Platform::Unix 0.4231
+      Module::Build::Platform::VMS 0.4231
+      Module::Build::Platform::VOS 0.4231
+      Module::Build::Platform::Windows 0.4231
+      Module::Build::Platform::aix 0.4231
+      Module::Build::Platform::cygwin 0.4231
+      Module::Build::Platform::darwin 0.4231
+      Module::Build::Platform::os2 0.4231
+      Module::Build::PodParser 0.4231
+    requirements:
+      CPAN::Meta 2.142060
+      Cwd 0
+      Data::Dumper 0
+      ExtUtils::CBuilder 0.27
+      ExtUtils::Install 0
+      ExtUtils::Manifest 0
+      ExtUtils::Mkbootstrap 0
+      ExtUtils::ParseXS 2.21
+      File::Basename 0
+      File::Compare 0
+      File::Copy 0
+      File::Find 0
+      File::Path 0
+      File::Spec 0.82
+      Getopt::Long 0
+      Module::Metadata 1.000002
+      Perl::OSType 1
+      Pod::Man 2.17
+      TAP::Harness 3.29
+      Text::Abbrev 0
+      Text::ParseWords 0
+      perl 5.006001
+      version 0.87
   Module-Build-Tiny-0.039
     pathname: L/LE/LEONT/Module-Build-Tiny-0.039.tar.gz
     provides:
@@ -1222,6 +1264,20 @@ DISTRIBUTIONS
       perl 5.008001
       strict 0
       warnings 0
+  Pod-Coverage-0.23
+    pathname: R/RC/RCLAMP/Pod-Coverage-0.23.tar.gz
+    provides:
+      Pod::Coverage 0.23
+      Pod::Coverage::CountParents undef
+      Pod::Coverage::ExportOnly undef
+      Pod::Coverage::Extractor 0.23
+      Pod::Coverage::Overloader undef
+    requirements:
+      Devel::Symdump 2.01
+      ExtUtils::MakeMaker 0
+      Pod::Find 0.21
+      Pod::Parser 1.13
+      Test::More 0
   Role-Tiny-2.000003
     pathname: H/HA/HAARG/Role-Tiny-2.000003.tar.gz
     provides:
@@ -1398,119 +1454,28 @@ DISTRIBUTIONS
       perl 5.006001
       strict 0
       warnings 0
-  Test-Harness-3.36
-    pathname: L/LE/LEONT/Test-Harness-3.36.tar.gz
+  Test-Pod-1.52
+    pathname: E/ET/ETHER/Test-Pod-1.52.tar.gz
     provides:
-      App::Prove 3.36
-      App::Prove::State 3.36
-      App::Prove::State::Result 3.36
-      App::Prove::State::Result::Test 3.36
-      Harness::Hook undef
-      TAP::Base 3.36
-      TAP::Formatter::Base 3.36
-      TAP::Formatter::Color 3.36
-      TAP::Formatter::Console 3.36
-      TAP::Formatter::Console::ParallelSession 3.36
-      TAP::Formatter::Console::Session 3.36
-      TAP::Formatter::File 3.36
-      TAP::Formatter::File::Session 3.36
-      TAP::Formatter::Session 3.36
-      TAP::Harness 3.36
-      TAP::Harness::Env 3.36
-      TAP::Object 3.36
-      TAP::Parser 3.36
-      TAP::Parser::Aggregator 3.36
-      TAP::Parser::Grammar 3.36
-      TAP::Parser::Iterator 3.36
-      TAP::Parser::Iterator::Array 3.36
-      TAP::Parser::Iterator::Process 3.36
-      TAP::Parser::Iterator::Stream 3.36
-      TAP::Parser::IteratorFactory 3.36
-      TAP::Parser::Multiplexer 3.36
-      TAP::Parser::Result 3.36
-      TAP::Parser::Result::Bailout 3.36
-      TAP::Parser::Result::Comment 3.36
-      TAP::Parser::Result::Plan 3.36
-      TAP::Parser::Result::Pragma 3.36
-      TAP::Parser::Result::Test 3.36
-      TAP::Parser::Result::Unknown 3.36
-      TAP::Parser::Result::Version 3.36
-      TAP::Parser::Result::YAML 3.36
-      TAP::Parser::ResultFactory 3.36
-      TAP::Parser::Scheduler 3.36
-      TAP::Parser::Scheduler::Job 3.36
-      TAP::Parser::Scheduler::Spinner 3.36
-      TAP::Parser::Source 3.36
-      TAP::Parser::SourceHandler 3.36
-      TAP::Parser::SourceHandler::Executable 3.36
-      TAP::Parser::SourceHandler::File 3.36
-      TAP::Parser::SourceHandler::Handle 3.36
-      TAP::Parser::SourceHandler::Perl 3.36
-      TAP::Parser::SourceHandler::RawTAP 3.36
-      TAP::Parser::YAMLish::Reader 3.36
-      TAP::Parser::YAMLish::Writer 3.36
-      Test::Harness 3.36
+      Test::Pod 1.52
     requirements:
       ExtUtils::MakeMaker 0
-  Test-Simple-1.302052
-    pathname: E/EX/EXODIST/Test-Simple-1.302052.tar.gz
+      File::Find 0
+      Pod::Simple 3.05
+      Test::Builder::Tester 1.02
+      Test::More 0.62
+      perl 5.008
+  Test-Pod-Coverage-1.10
+    pathname: N/NE/NEILB/Test-Pod-Coverage-1.10.tar.gz
     provides:
-      Test2 1.302052
-      Test2::API 1.302052
-      Test2::API::Breakage 1.302052
-      Test2::API::Context 1.302052
-      Test2::API::Instance 1.302052
-      Test2::API::Stack 1.302052
-      Test2::Event 1.302052
-      Test2::Event::Bail 1.302052
-      Test2::Event::Diag 1.302052
-      Test2::Event::Exception 1.302052
-      Test2::Event::Generic 1.302052
-      Test2::Event::Info 1.302052
-      Test2::Event::Note 1.302052
-      Test2::Event::Ok 1.302052
-      Test2::Event::Plan 1.302052
-      Test2::Event::Skip 1.302052
-      Test2::Event::Subtest 1.302052
-      Test2::Event::Waiting 1.302052
-      Test2::Formatter 1.302052
-      Test2::Formatter::TAP 1.302052
-      Test2::Hub 1.302052
-      Test2::Hub::Interceptor 1.302052
-      Test2::Hub::Interceptor::Terminator 1.302052
-      Test2::Hub::Subtest 1.302052
-      Test2::IPC 1.302052
-      Test2::IPC::Driver 1.302052
-      Test2::IPC::Driver::Files 1.302052
-      Test2::Util 1.302052
-      Test2::Util::ExternalMeta 1.302052
-      Test2::Util::HashBase 1.302052
-      Test2::Util::Trace 1.302052
-      Test::Builder 1.302052
-      Test::Builder::Formatter 1.302052
-      Test::Builder::IO::Scalar 2.113
-      Test::Builder::Module 1.302052
-      Test::Builder::Tester 1.302052
-      Test::Builder::Tester::Color 1.302052
-      Test::Builder::Tester::Tie 1.302052
-      Test::Builder::TodoDiag 1.302052
-      Test::More 1.302052
-      Test::Simple 1.302052
-      Test::Tester 1.302052
-      Test::Tester::Capture 1.302052
-      Test::Tester::CaptureRunner 1.302052
-      Test::Tester::Delegate 1.302052
-      Test::use::ok 1.302052
-      ok 1.302052
+      Test::Pod::Coverage 1.10
     requirements:
       ExtUtils::MakeMaker 0
-      File::Spec 0
-      File::Temp 0
-      PerlIO 0
-      Scalar::Util 1.13
-      Storable 0
-      perl 5.008001
-      utf8 0
+      Pod::Coverage 0
+      Test::Builder 0
+      perl 5.006
+      strict 0
+      warnings 0
   Test-Warn-0.30
     pathname: C/CH/CHORNY/Test-Warn-0.30.tar.gz
     provides:
@@ -1525,22 +1490,6 @@ DISTRIBUTIONS
       Test::Builder::Tester 1.02
       Test::More 0
       perl 5.006
-  Throwable-0.200013
-    pathname: R/RJ/RJBS/Throwable-0.200013.tar.gz
-    provides:
-      StackTrace::Auto 0.200013
-      Throwable 0.200013
-      Throwable::Error 0.200013
-    requirements:
-      Carp 0
-      Devel::StackTrace 1.32
-      ExtUtils::MakeMaker 0
-      Module::Runtime 0.002
-      Moo 1.000001
-      Moo::Role 0
-      Scalar::Util 0
-      Sub::Quote 0
-      overload 0
   Try-Tiny-0.27
     pathname: E/ET/ETHER/Try-Tiny-0.27.tar.gz
     provides:
