@@ -166,7 +166,7 @@ you to perform operations like adding or subtracting from the fund.
 
 The basic working is that of a double entry system: every transaction
 always involves two parties. It's possible to handle multiparty
-transactions too, but they always resolve to be man two-party
+transactions too, but they always resolve to be many two-party
 transactions actually. In its current state, it allows to easily track
 expenses that should be split across multiple participants, possibly
 according to a given preset scheme (e.g. equal split, or weighted, or
@@ -641,11 +641,16 @@ Flavio Poletti <polettix@cpan.org>
 
 # COPYRIGHT AND LICENSE
 
-Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+Copyright 2021 by Flavio Poletti <flavio@polettix.it>
 
-This module is free software. You can redistribute it and/or modify it
-under the terms of the Artistic License 2.0.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but
-without any warranty; without even the implied warranty of
-merchantability or fitness for a particular purpose.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
